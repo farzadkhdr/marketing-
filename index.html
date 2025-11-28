@@ -1027,8 +1027,8 @@
                                 <input type="text" id="customerPhone" class="form-control" placeholder="ژمارەی مۆبایل">
                             </div>
                             <div class="form-col">
-                                <label for="customerReceipt">رەسید</label>
-                                <input type="text" id="customerReceipt" class="form-control" placeholder="رەسید">
+                                <label for="customerInitialDebt">بڕی قەرز (سەرەتا)</label>
+                                <input type="number" id="customerInitialDebt" class="form-control" placeholder="بڕی قەرز" min="0" value="0">
                             </div>
                             <div class="form-col" style="display: flex; align-items: flex-end;">
                                 <button id="addCustomerBtn" class="btn btn-success" style="width: 100%;">
@@ -1060,6 +1060,16 @@
                                 <!-- Customers will be populated by JavaScript -->
                             </tbody>
                         </table>
+                    </div>
+
+                    <!-- دوو کلیکی نوێ بۆ پارە وەسڵکردن و مێژووی پارەدان -->
+                    <div style="display: flex; gap: 10px; margin-top: 20px;">
+                        <button id="showPaymentModalBtn" class="btn btn-success">
+                            <i class="fas fa-money-bill-wave"></i> پارە وەسڵ کردن
+                        </button>
+                        <button id="showPaymentHistoryBtn" class="btn btn-info">
+                            <i class="fas fa-history"></i> مێژووی پارە وەسڵ کردن
+                        </button>
                     </div>
                 </section>
 
@@ -1224,6 +1234,23 @@
         </div>
     </div>
 
+    <!-- Modal for payment history -->
+    <div id="paymentHistoryModal" class="modal">
+        <div class="modal-content" style="max-width: 1000px;">
+            <div class="modal-header">
+                <h3><i class="fas fa-history"></i> مێژووی پارە وەسڵ کردن</h3>
+                <span class="close">&times;</span>
+            </div>
+            <div class="modal-body" id="paymentHistoryModalBody">
+                <!-- Payment history will be populated by JavaScript -->
+            </div>
+            <div class="modal-footer">
+                <button class="btn" id="printPaymentHistoryBtn"><i class="fas fa-print"></i> چاپکردن</button>
+                <button class="btn btn-danger" id="closePaymentHistoryBtn">داخستن</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         // Sample data for demonstration
         const sampleData = {
@@ -1263,8 +1290,8 @@
                 { id: 3, productId: 3, productName: 'چای', quantity: 200, unit: 'دانە', price: 200, total: 40000, date: '2023-09-25' }
             ],
             payments: [
-                { id: 1, customerId: 1, date: '2023-10-05', amount: 5000, previousDebt: 20000, newDebt: 15000 },
-                { id: 2, customerId: 3, date: '2023-10-06', amount: 2500, previousDebt: 10000, newDebt: 7500 }
+                { id: 1, customerId: 1, customerName: 'عەلی', date: '2023-10-05', amount: 5000, previousDebt: 20000, newDebt: 15000 },
+                { id: 2, customerId: 3, customerName: 'مەحموود', date: '2023-10-06', amount: 2500, previousDebt: 10000, newDebt: 7500 }
             ],
             system: {
                 name: 'سیستەمی مارکێت',
@@ -1341,7 +1368,7 @@
         // Customers elements
         const customerName = document.getElementById('customerName');
         const customerPhone = document.getElementById('customerPhone');
-        const customerReceipt = document.getElementById('customerReceipt');
+        const customerInitialDebt = document.getElementById('customerInitialDebt');
         const addCustomerBtn = document.getElementById('addCustomerBtn');
         const customersSearch = document.getElementById('customersSearch');
         const customersTable = document.getElementById('customersTable');
@@ -1374,6 +1401,14 @@
         const deleteInvoiceBtn = document.getElementById('deleteInvoiceBtn');
         const confirmPaymentBtn = document.getElementById('confirmPaymentBtn');
         const cancelPaymentBtn = document.getElementById('cancelPaymentBtn');
+
+        // دوو کلیکی نوێ
+        const showPaymentModalBtn = document.getElementById('showPaymentModalBtn');
+        const showPaymentHistoryBtn = document.getElementById('showPaymentHistoryBtn');
+        const paymentHistoryModal = document.getElementById('paymentHistoryModal');
+        const paymentHistoryModalBody = document.getElementById('paymentHistoryModalBody');
+        const printPaymentHistoryBtn = document.getElementById('printPaymentHistoryBtn');
+        const closePaymentHistoryBtn = document.getElementById('closePaymentHistoryBtn');
 
         // Initialize the application
         function init() {
@@ -1484,6 +1519,7 @@
                 btn.addEventListener('click', () => {
                     invoiceModal.style.display = 'none';
                     paymentModal.style.display = 'none';
+                    paymentHistoryModal.style.display = 'none';
                 });
             });
             
@@ -1493,6 +1529,9 @@
                 }
                 if (e.target === paymentModal) {
                     paymentModal.style.display = 'none';
+                }
+                if (e.target === paymentHistoryModal) {
+                    paymentHistoryModal.style.display = 'none';
                 }
             });
             
@@ -1509,6 +1548,14 @@
             confirmPaymentBtn.addEventListener('click', confirmPayment);
             cancelPaymentBtn.addEventListener('click', () => {
                 paymentModal.style.display = 'none';
+            });
+
+            // Event listeners for new buttons
+            showPaymentModalBtn.addEventListener('click', showPaymentModalForAnyCustomer);
+            showPaymentHistoryBtn.addEventListener('click', showPaymentHistory);
+            printPaymentHistoryBtn.addEventListener('click', printPaymentHistory);
+            closePaymentHistoryBtn.addEventListener('click', () => {
+                paymentHistoryModal.style.display = 'none';
             });
         }
 
@@ -2042,11 +2089,11 @@
             showAlert('کڕین بە سەرکەوتویی تۆمار کرا!', 'success');
         }
 
-        // Add customer
+        // Add customer - گۆڕانکاری لێرە
         function addCustomer() {
             const name = customerName.value;
             const phone = customerPhone.value;
-            const receipt = customerReceipt.value;
+            const initialDebt = parseFloat(customerInitialDebt.value) || 0;
             
             if (!name) {
                 showAlert('تکایە ناوی کەس بنووسە!', 'danger');
@@ -2066,8 +2113,8 @@
                 id: sampleData.customers.length + 1,
                 name,
                 phone,
-                receipt: receipt || `R${String(sampleData.customers.length + 1).padStart(3, '0')}`,
-                debt: 0
+                receipt: `R${String(sampleData.customers.length + 1).padStart(3, '0')}`,
+                debt: initialDebt
             };
             
             sampleData.customers.push(customer);
@@ -2078,7 +2125,7 @@
             // Reset form
             customerName.value = '';
             customerPhone.value = '';
-            customerReceipt.value = '';
+            customerInitialDebt.value = '0';
             
             // Update displays
             updateCustomersTable();
@@ -2231,6 +2278,386 @@
             showAlert('بەکارهێنەر بە سەرکەوتویی زیاد کرا!', 'success');
         }
 
+        // Show payment modal for any customer
+        function showPaymentModalForAnyCustomer() {
+            paymentModalBody.innerHTML = `
+                <div class="form-container">
+                    <h3>پارە وەسڵکردن</h3>
+                    <div class="form-group">
+                        <label for="paymentCustomerSearch">گەڕان بەدوای کەس</label>
+                        <div class="search-container">
+                            <input type="text" id="paymentCustomerSearch" class="search-input" placeholder="ناوی کەس...">
+                            <span class="search-icon"><i class="fas fa-search"></i></span>
+                        </div>
+                        <div id="paymentCustomerSuggestions" style="max-height: 200px; overflow-y: auto; border: 1px solid #ddd; border-radius: 4px; display: none;">
+                            <!-- Customer suggestions will appear here -->
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="paymentAmount">بڕی پارە</label>
+                        <input type="number" id="paymentAmount" class="form-control" placeholder="بڕی پارە">
+                    </div>
+                    <div id="currentDebtInfo" style="display: none; padding: 10px; background: #f8f9fa; border-radius: 4px; margin-top: 10px;">
+                        <strong>قەرزی ئێستا: <span id="currentDebtAmount">0</span> دینار</strong>
+                    </div>
+                </div>
+            `;
+            
+            paymentModal.style.display = 'flex';
+            
+            // Set up customer search
+            const paymentCustomerSearch = document.getElementById('paymentCustomerSearch');
+            const paymentCustomerSuggestions = document.getElementById('paymentCustomerSuggestions');
+            
+            paymentCustomerSearch.addEventListener('input', () => {
+                const query = paymentCustomerSearch.value.toLowerCase();
+                
+                if (query.length === 0) {
+                    paymentCustomerSuggestions.style.display = 'none';
+                    document.getElementById('currentDebtInfo').style.display = 'none';
+                    return;
+                }
+                
+                const filteredCustomers = sampleData.customers.filter(customer => 
+                    customer.name.toLowerCase().includes(query)
+                );
+                
+                displayPaymentCustomerSuggestions(filteredCustomers);
+            });
+            
+            // Set up confirm payment button
+            confirmPaymentBtn.onclick = () => {
+                const customerName = paymentCustomerSearch.value;
+                const amount = parseFloat(document.getElementById('paymentAmount').value);
+                
+                if (!customerName) {
+                    showAlert('تکایە ناوی کەس بنووسە!', 'danger');
+                    return;
+                }
+                
+                if (!amount || amount <= 0) {
+                    showAlert('تکایە بڕێکی دروست بنووسە!', 'danger');
+                    return;
+                }
+                
+                const customer = sampleData.customers.find(c => c.name === customerName);
+                if (!customer) {
+                    showAlert('کەس نەدۆزرایەوە!', 'danger');
+                    return;
+                }
+                
+                if (amount > customer.debt) {
+                    showAlert('بڕی پارەی وەسڵکراو نابێت زیاتر بێت لە قەرز!', 'danger');
+                    return;
+                }
+                
+                confirmPayment(customer.id, amount);
+            };
+        }
+
+        // Display customer suggestions for payment
+        function displayPaymentCustomerSuggestions(customers) {
+            const container = document.getElementById('paymentCustomerSuggestions');
+            container.innerHTML = '';
+            
+            if (customers.length === 0) {
+                container.style.display = 'none';
+                document.getElementById('currentDebtInfo').style.display = 'none';
+                return;
+            }
+            
+            customers.forEach(customer => {
+                const div = document.createElement('div');
+                div.style.padding = '10px';
+                div.style.borderBottom = '1px solid #eee';
+                div.style.cursor = 'pointer';
+                div.innerHTML = `
+                    <div><strong>${customer.name}</strong></div>
+                    <div>قەرز: ${customer.debt} دینار</div>
+                `;
+                
+                div.addEventListener('click', () => {
+                    document.getElementById('paymentCustomerSearch').value = customer.name;
+                    document.getElementById('currentDebtAmount').textContent = customer.debt.toLocaleString();
+                    document.getElementById('currentDebtInfo').style.display = 'block';
+                    container.style.display = 'none';
+                });
+                
+                container.appendChild(div);
+            });
+            
+            container.style.display = 'block';
+        }
+
+        // Confirm payment
+        function confirmPayment(customerId, amount) {
+            const customer = sampleData.customers.find(c => c.id === customerId);
+            if (!customer) return;
+            
+            const previousDebt = customer.debt;
+            customer.debt -= amount;
+            
+            // Record payment
+            const payment = {
+                id: sampleData.payments.length + 1,
+                customerId,
+                customerName: customer.name,
+                date: new Date().toISOString().split('T')[0],
+                amount,
+                previousDebt,
+                newDebt: customer.debt
+            };
+            
+            sampleData.payments.push(payment);
+            
+            // Save data
+            saveDataToStorage();
+            
+            // Update displays
+            updateDashboard();
+            updateDebtorsTable();
+            updateCustomersTable();
+            
+            // Close modal
+            paymentModal.style.display = 'none';
+            
+            showAlert('پارە وەسڵکرا بە سەرکەوتویی!', 'success');
+        }
+
+        // Show payment history
+        function showPaymentHistory() {
+            paymentHistoryModalBody.innerHTML = `
+                <div class="table-container">
+                    <h3 style="padding: 15px; background: var(--light);">
+                        <i class="fas fa-history"></i> مێژووی پارە وەسڵ کردن
+                    </h3>
+                    <div class="search-container" style="margin: 15px;">
+                        <input type="text" id="paymentHistorySearch" class="search-input" placeholder="گەڕان بەدوای ناوی کەس...">
+                        <span class="search-icon"><i class="fas fa-search"></i></span>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>کەس</th>
+                                <th>بڕی پارە</th>
+                                <th>قەرزی پێشتر</th>
+                                <th>قەرزی دواتر</th>
+                                <th>بەروار</th>
+                                <th>کردارەکان</th>
+                            </tr>
+                        </thead>
+                        <tbody id="paymentHistoryTable">
+                            <!-- Payment history will be populated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            `;
+            
+            paymentHistoryModal.style.display = 'flex';
+            updatePaymentHistoryTable();
+            
+            // Set up search functionality
+            const paymentHistorySearch = document.getElementById('paymentHistorySearch');
+            paymentHistorySearch.addEventListener('input', updatePaymentHistoryTable);
+        }
+
+        // Update payment history table
+        function updatePaymentHistoryTable() {
+            const paymentHistoryTable = document.getElementById('paymentHistoryTable');
+            paymentHistoryTable.innerHTML = '';
+            
+            const query = document.getElementById('paymentHistorySearch').value.toLowerCase();
+            let filteredPayments = sampleData.payments;
+            
+            if (query) {
+                filteredPayments = sampleData.payments.filter(payment => 
+                    payment.customerName.toLowerCase().includes(query)
+                );
+            }
+            
+            if (filteredPayments.length === 0) {
+                paymentHistoryTable.innerHTML = `
+                    <tr>
+                        <td colspan="6" style="text-align: center; padding: 20px;">
+                            هیچ پارە وەسڵکردنێک نەدۆزرایەوە
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            filteredPayments.reverse().forEach(payment => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${payment.customerName}</td>
+                    <td>${payment.amount.toLocaleString()} دینار</td>
+                    <td>${payment.previousDebt.toLocaleString()} دینار</td>
+                    <td>${payment.newDebt.toLocaleString()} دینار</td>
+                    <td>${payment.date}</td>
+                    <td>
+                        <button class="btn print-payment-receipt" data-id="${payment.id}">
+                            <i class="fas fa-print"></i> چاپکردن
+                        </button>
+                        <button class="btn btn-danger delete-payment" data-id="${payment.id}">
+                            <i class="fas fa-trash"></i> سڕینەوە
+                        </button>
+                    </td>
+                `;
+                
+                paymentHistoryTable.appendChild(row);
+                
+                // Add event listener for print button
+                const printBtn = row.querySelector('.print-payment-receipt');
+                printBtn.addEventListener('click', () => {
+                    printPaymentReceipt(payment.id);
+                });
+                
+                // Add event listener for delete button
+                const deleteBtn = row.querySelector('.delete-payment');
+                deleteBtn.addEventListener('click', () => {
+                    deletePayment(payment.id);
+                });
+            });
+        }
+
+        // Print payment receipt
+        function printPaymentReceipt(paymentId) {
+            const payment = sampleData.payments.find(p => p.id === paymentId);
+            if (!payment) return;
+            
+            const customer = sampleData.customers.find(c => c.id === payment.customerId);
+            
+            const receiptWindow = window.open('', '_blank');
+            receiptWindow.document.write(`
+                <!DOCTYPE html>
+                <html lang="ku" dir="rtl">
+                <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <title>فاکتووری پارە وەسڵکردن</title>
+                    <style>
+                        body {
+                            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                            line-height: 1.6;
+                            color: #333;
+                            max-width: 800px;
+                            margin: 0 auto;
+                            padding: 20px;
+                        }
+                        .header {
+                            text-align: center;
+                            margin-bottom: 30px;
+                            border-bottom: 2px solid #3498db;
+                            padding-bottom: 20px;
+                        }
+                        .details {
+                            display: flex;
+                            justify-content: space-between;
+                            margin-bottom: 20px;
+                        }
+                        table {
+                            width: 100%;
+                            border-collapse: collapse;
+                            margin-bottom: 20px;
+                        }
+                        th, td {
+                            padding: 10px;
+                            text-align: right;
+                            border-bottom: 1px solid #ddd;
+                        }
+                        th {
+                            background-color: #f8f9fa;
+                        }
+                        .total {
+                            text-align: left;
+                            font-weight: bold;
+                            font-size: 1.2rem;
+                            margin-top: 20px;
+                        }
+                        @media print {
+                            body { margin: 0; padding: 20px; }
+                            .no-print { display: none; }
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="header">
+                        <h1>${sampleData.system.name}</h1>
+                        <h2>فاکتووری پارە وەسڵکردن</h2>
+                    </div>
+                    <div class="details">
+                        <div>
+                            <p><strong>کەس:</strong> ${payment.customerName}</p>
+                            <p><strong>بەروار:</strong> ${payment.date}</p>
+                        </div>
+                        <div>
+                            <p><strong>کۆدی پارەدان:</strong> P${String(payment.id).padStart(3, '0')}</p>
+                        </div>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>بڕی پارە</th>
+                                <th>قەرزی پێشتر</th>
+                                <th>قەرزی دواتر</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>${payment.amount.toLocaleString()} دینار</td>
+                                <td>${payment.previousDebt.toLocaleString()} دینار</td>
+                                <td>${payment.newDebt.toLocaleString()} دینار</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <div class="total">
+                        <p>کۆی پارەی وەسڵکراو: ${payment.amount.toLocaleString()} دینار</p>
+                    </div>
+                    <div style="margin-top: 50px; text-align: center;">
+                        <p>___________________________________</p>
+                        <p>واژۆ</p>
+                    </div>
+                    <button class="no-print" onclick="window.print()" style="margin-top: 20px; padding: 10px 20px; background: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                        چاپکردن
+                    </button>
+                </body>
+                </html>
+            `);
+            receiptWindow.document.close();
+        }
+
+        // Delete payment
+        function deletePayment(paymentId) {
+            if (confirm('دڵنیای لە سڕینەوەی ئەم پارە وەسڵکردنە؟')) {
+                const payment = sampleData.payments.find(p => p.id === paymentId);
+                if (payment) {
+                    // Restore customer debt
+                    const customer = sampleData.customers.find(c => c.id === payment.customerId);
+                    if (customer) {
+                        customer.debt += payment.amount;
+                    }
+                    
+                    // Remove payment
+                    sampleData.payments = sampleData.payments.filter(p => p.id !== paymentId);
+                    
+                    // Save data
+                    saveDataToStorage();
+                    
+                    // Update displays
+                    updatePaymentHistoryTable();
+                    updateDashboard();
+                    updateCustomersTable();
+                    
+                    showAlert('پارە وەسڵکردن سڕدرایەوە!', 'success');
+                }
+            }
+        }
+
+        // Print payment history
+        function printPaymentHistory() {
+            window.print();
+        }
+
         // Update all displays
         function updateAllDisplays() {
             updateDashboard();
@@ -2300,9 +2727,44 @@
                 // Add event listener for pay debt button
                 const payBtn = row.querySelector('.pay-debt');
                 payBtn.addEventListener('click', () => {
-                    showPaymentModal(customer.id);
+                    showPaymentModalForCustomer(customer.id);
                 });
             });
+        }
+
+        // Show payment modal for specific customer
+        function showPaymentModalForCustomer(customerId) {
+            const customer = sampleData.customers.find(c => c.id === customerId);
+            if (!customer) return;
+            
+            paymentModalBody.innerHTML = `
+                <div class="form-container">
+                    <h3>پارە وەسڵکردن بۆ ${customer.name}</h3>
+                    <div class="form-group">
+                        <label for="paymentAmount">بڕی پارە</label>
+                        <input type="number" id="paymentAmount" class="form-control" placeholder="بڕی پارە" max="${customer.debt}" value="${customer.debt}">
+                        <small>قەرزی ئێستا: ${customer.debt.toLocaleString()} دینار</small>
+                    </div>
+                </div>
+            `;
+            
+            paymentModal.style.display = 'flex';
+            
+            // Set up confirm payment button
+            confirmPaymentBtn.onclick = () => {
+                const amount = parseFloat(document.getElementById('paymentAmount').value);
+                if (!amount || amount <= 0) {
+                    showAlert('تکایە بڕێکی دروست بنووسە!', 'danger');
+                    return;
+                }
+                
+                if (amount > customer.debt) {
+                    showAlert('بڕی پارەی وەسڵکراو نابێت زیاتر بێت لە قەرز!', 'danger');
+                    return;
+                }
+                
+                confirmPayment(customerId, amount);
+            };
         }
 
         // Update recent sales table
@@ -2777,75 +3239,6 @@
                 updateDashboard();
                 showAlert('قەرز بە سەرکەوتویی نوێکرایەوە!', 'success');
             }
-        }
-
-        // Show payment modal
-        function showPaymentModal(customerId) {
-            const customer = sampleData.customers.find(c => c.id === customerId);
-            if (!customer) return;
-            
-            paymentModalBody.innerHTML = `
-                <div class="form-container">
-                    <h3>پارە وەسڵکردن بۆ ${customer.name}</h3>
-                    <div class="form-group">
-                        <label for="paymentAmount">بڕی پارە</label>
-                        <input type="number" id="paymentAmount" class="form-control" placeholder="بڕی پارە" max="${customer.debt}" value="${customer.debt}">
-                        <small>قەرزی ئێستا: ${customer.debt.toLocaleString()} دینار</small>
-                    </div>
-                </div>
-            `;
-            
-            paymentModal.style.display = 'flex';
-            
-            // Set up confirm payment button
-            confirmPaymentBtn.onclick = () => {
-                const amount = parseFloat(document.getElementById('paymentAmount').value);
-                if (!amount || amount <= 0) {
-                    showAlert('تکایە بڕێکی دروست بنووسە!', 'danger');
-                    return;
-                }
-                
-                if (amount > customer.debt) {
-                    showAlert('بڕی پارەی وەسڵکراو نابێت زیاتر بێت لە قەرز!', 'danger');
-                    return;
-                }
-                
-                confirmPayment(customerId, amount);
-            };
-        }
-
-        // Confirm payment
-        function confirmPayment(customerId, amount) {
-            const customer = sampleData.customers.find(c => c.id === customerId);
-            if (!customer) return;
-            
-            const previousDebt = customer.debt;
-            customer.debt -= amount;
-            
-            // Record payment
-            const payment = {
-                id: sampleData.payments.length + 1,
-                customerId,
-                date: new Date().toISOString().split('T')[0],
-                amount,
-                previousDebt,
-                newDebt: customer.debt
-            };
-            
-            sampleData.payments.push(payment);
-            
-            // Save data
-            saveDataToStorage();
-            
-            // Update displays
-            updateDashboard();
-            updateDebtorsTable();
-            updateCustomersTable();
-            
-            // Close modal
-            paymentModal.style.display = 'none';
-            
-            showAlert('پارە وەسڵکرا بە سەرکەوتویی!', 'success');
         }
 
         // Show alert
