@@ -1637,8 +1637,14 @@
 
         // Handle login
         function handleLogin() {
-            const username = usernameInput.value;
-            const password = passwordInput.value;
+            const username = usernameInput.value.trim();
+            const password = passwordInput.value.trim();
+            
+            // Simple validation
+            if (!username || !password) {
+                showLoginMessage('تکایە هەموو خانەکان پڕ بکەرەوە!', 'danger');
+                return;
+            }
             
             const user = sampleData.users.find(u => u.username === username && u.password === password);
             
@@ -1652,9 +1658,15 @@
                 // Show welcome message
                 showAlert(`بەخێربێی ${user.username}!`, 'success');
             } else {
-                loginMessage.textContent = 'ناوی بەکارهێنەر یان پاسوۆرد هەڵەیە!';
-                loginMessage.style.display = 'block';
+                showLoginMessage('ناوی بەکارهێنەر یان پاسوۆرد هەڵەیە!', 'danger');
             }
+        }
+
+        // Show login message
+        function showLoginMessage(message, type) {
+            loginMessage.textContent = message;
+            loginMessage.className = `alert alert-${type}`;
+            loginMessage.style.display = 'block';
         }
 
         // Handle logout
@@ -1666,6 +1678,7 @@
             app.style.display = 'none';
             cart = [];
             updateCart();
+            loginMessage.style.display = 'none';
         }
 
         // Show section
