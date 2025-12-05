@@ -287,6 +287,15 @@
             margin-bottom: 10px;
         }
 
+        /* Special card colors */
+        .card:nth-child(3) {
+            border-left: 4px solid var(--warning);
+        }
+
+        .card:nth-child(5) {
+            border-left: 4px solid var(--info);
+        }
+
         /* Table Styles */
         .table-container {
             background: white;
@@ -723,6 +732,11 @@
                         </div>
                         <div class="card">
                             <i class="fas fa-hand-holding-usd"></i>
+                            <h3>کۆی قازانج</h3>
+                            <div class="value" id="totalProfit">0 دینار</div>
+                        </div>
+                        <div class="card">
+                            <i class="fas fa-coins"></i>
                             <h3>کۆی قەرزداران</h3>
                             <div class="value" id="totalDebt">0 دینار</div>
                         </div>
@@ -800,19 +814,37 @@
                                     <input type="text" id="productSearch" class="search-input" placeholder="ناوی کاڵا یان بارکۆد...">
                                     <span class="search-icon"><i class="fas fa-search"></i></span>
                                 </div>
-                                <div id="productSuggestions" style="max-height: 200px; overflow-y: auto; border: 1px solid #ddd; border-radius: 4px; display: none;">
-                                    <!-- Product suggestions will appear here -->
-                                </div>
+                                <div id="productSuggestions" style="max-height: 200px; overflow-y: auto; border: 1px solid #ddd; border-radius: 4px; display: none;"></div>
                             </div>
+                            <div class="form-col">
+                                <label for="saleUnit">یەکە</label>
+                                <select id="saleUnit" class="form-control">
+                                    <option value="unit">دانە</option>
+                                    <option value="carton">کارتۆن</option>
+                                </select>
+                            </div>
+                            <div class="form-col">
+                                <label for="saleQuantity">بڕ</label>
+                                <input type="number" id="saleQuantity" class="form-control" placeholder="بڕ" min="1" value="1">
+                            </div>
+                            <div class="form-col">
+                                <label for="customPrice">نرخ (دینار)</label>
+                                <input type="number" id="customPrice" class="form-control" placeholder="نرخ" min="0" step="0.01">
+                            </div>
+                            <div class="form-col" style="display: flex; align-items: flex-end;">
+                                <button id="addToCartBtn" class="btn" style="width: 100%;">
+                                    <i class="fas fa-cart-plus"></i> زیادکردن بۆ سەبەتە
+                                </button>
+                            </div>
+                        </div>
+                        <div class="form-row">
                             <div class="form-col">
                                 <label for="customerSearch">گەڕان بەدوای کەس</label>
                                 <div class="search-container">
                                     <input type="text" id="customerSearch" class="search-input" placeholder="ناوی کەس...">
                                     <span class="search-icon"><i class="fas fa-search"></i></span>
                                 </div>
-                                <div id="customerSuggestions" style="max-height: 200px; overflow-y: auto; border: 1px solid #ddd; border-radius: 4px; display: none;">
-                                    <!-- Customer suggestions will appear here -->
-                                </div>
+                                <div id="customerSuggestions" style="max-height: 200px; overflow-y: auto; border: 1px solid #ddd; border-radius: 4px; display: none;"></div>
                             </div>
                             <div class="form-col">
                                 <label for="paymentMethod">شێوازی پارەدان</label>
@@ -820,11 +852,6 @@
                                     <option value="cash">نەقدی</option>
                                     <option value="credit">قەرز</option>
                                 </select>
-                            </div>
-                            <div class="form-col" style="display: flex; align-items: flex-end;">
-                                <button id="addToCartBtn" class="btn" style="width: 100%;">
-                                    <i class="fas fa-cart-plus"></i> زیادکردن بۆ سەبەتە
-                                </button>
                             </div>
                         </div>
                     </div>
@@ -922,6 +949,13 @@
                         </div>
                         <div class="form-row">
                             <div class="form-col">
+                                <label for="productImage">وێنەی کاڵا</label>
+                                <input type="file" id="productImage" class="form-control" accept="image/*">
+                                <div id="imagePreview" style="margin-top: 10px;"></div>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-col">
                                 <button id="addProductBtn" class="btn btn-success" style="width: 100%;">
                                     <i class="fas fa-plus"></i> زیادکردنی کاڵا
                                 </button>
@@ -940,7 +974,7 @@
                         <table>
                             <thead>
                                 <tr>
-                                    <th>ناوی کاڵا</th>
+                                    <th>کاڵا</th>
                                     <th>بارکۆد</th>
                                     <th>بڕی ماوە</th>
                                     <th>یەکە</th>
@@ -969,9 +1003,7 @@
                                     <input type="text" id="purchaseProductSearch" class="search-input" placeholder="ناوی کاڵا...">
                                     <span class="search-icon"><i class="fas fa-search"></i></span>
                                 </div>
-                                <div id="purchaseProductSuggestions" style="max-height: 200px; overflow-y: auto; border: 1px solid #ddd; border-radius: 4px; display: none;">
-                                    <!-- Product suggestions will appear here -->
-                                </div>
+                                <div id="purchaseProductSuggestions" style="max-height: 200px; overflow-y: auto; border: 1px solid #ddd; border-radius: 4px; display: none;"></div>
                             </div>
                             <div class="form-col">
                                 <label for="purchaseQuantity">بڕی کڕین</label>
@@ -1062,7 +1094,6 @@
                         </table>
                     </div>
 
-                    <!-- دوو کلیکی نوێ بۆ پارە وەسڵکردن و مێژووی پارەدان -->
                     <div style="display: flex; gap: 10px; margin-top: 20px;">
                         <button id="showPaymentModalBtn" class="btn btn-success">
                             <i class="fas fa-money-bill-wave"></i> پارە وەسڵ کردن
@@ -1206,9 +1237,7 @@
                 <h3><i class="fas fa-receipt"></i> وردەکاری فاکتوور</h3>
                 <span class="close">&times;</span>
             </div>
-            <div class="modal-body" id="invoiceModalBody">
-                <!-- Invoice details will be populated by JavaScript -->
-            </div>
+            <div class="modal-body" id="invoiceModalBody"></div>
             <div class="modal-footer">
                 <button class="btn" id="printInvoiceBtn"><i class="fas fa-print"></i> چاپکردن</button>
                 <button class="btn btn-warning" id="editInvoiceBtn"><i class="fas fa-edit"></i> دەستکاری</button>
@@ -1224,9 +1253,7 @@
                 <h3><i class="fas fa-money-bill-wave"></i> پارە وەسڵکردن</h3>
                 <span class="close">&times;</span>
             </div>
-            <div class="modal-body" id="paymentModalBody">
-                <!-- Payment details will be populated by JavaScript -->
-            </div>
+            <div class="modal-body" id="paymentModalBody"></div>
             <div class="modal-footer">
                 <button class="btn btn-success" id="confirmPaymentBtn"><i class="fas fa-check"></i> پشتڕاستکردنەوە</button>
                 <button class="btn btn-danger" id="cancelPaymentBtn"><i class="fas fa-times"></i> پاشگەزبوونەوە</button>
@@ -1241,9 +1268,7 @@
                 <h3><i class="fas fa-history"></i> مێژووی پارە وەسڵ کردن</h3>
                 <span class="close">&times;</span>
             </div>
-            <div class="modal-body" id="paymentHistoryModalBody">
-                <!-- Payment history will be populated by JavaScript -->
-            </div>
+            <div class="modal-body" id="paymentHistoryModalBody"></div>
             <div class="modal-footer">
                 <button class="btn" id="printPaymentHistoryBtn"><i class="fas fa-print"></i> چاپکردن</button>
                 <button class="btn btn-danger" id="closePaymentHistoryBtn">داخستن</button>
@@ -1273,15 +1298,15 @@
             ],
             sales: [
                 { id: 1, customerId: 1, date: '2023-10-01', total: 25000, paymentMethod: 'credit', items: [
-                    { productId: 1, name: 'شەکر', quantity: 10, unit: 'کیلۆ', price: 600, total: 6000 },
-                    { productId: 2, name: 'برنج', quantity: 5, unit: 'کیلۆ', price: 1800, total: 9000 },
-                    { productId: 3, name: 'چای', quantity: 40, unit: 'دانە', price: 250, total: 10000 }
+                    { productId: 1, name: 'شەکر', quantity: 10, unit: 'کیلۆ', price: 600, total: 6000, unitType: 'unit' },
+                    { productId: 2, name: 'برنج', quantity: 5, unit: 'کیلۆ', price: 1800, total: 9000, unitType: 'unit' },
+                    { productId: 3, name: 'چای', quantity: 40, unit: 'دانە', price: 250, total: 10000, unitType: 'unit' }
                 ]},
                 { id: 2, customerId: 3, date: '2023-10-02', total: 12500, paymentMethod: 'credit', items: [
-                    { productId: 3, name: 'چای', quantity: 50, unit: 'دانە', price: 250, total: 12500 }
+                    { productId: 3, name: 'چای', quantity: 50, unit: 'دانە', price: 250, total: 12500, unitType: 'unit' }
                 ]},
                 { id: 3, customerId: null, date: '2023-10-03', total: 3000, paymentMethod: 'cash', items: [
-                    { productId: 4, name: 'رۆن', quantity: 3, unit: 'لیتر', price: 1000, total: 3000 }
+                    { productId: 4, name: 'رۆن', quantity: 3, unit: 'لیتر', price: 1000, total: 3000, unitType: 'unit' }
                 ]}
             ],
             purchases: [
@@ -1335,6 +1360,9 @@
         const finalizeSaleBtn = document.getElementById('finalizeSaleBtn');
         const salesHistorySearch = document.getElementById('salesHistorySearch');
         const salesHistoryTable = document.getElementById('salesHistoryTable');
+        const saleUnit = document.getElementById('saleUnit');
+        const saleQuantity = document.getElementById('saleQuantity');
+        const customPrice = document.getElementById('customPrice');
         
         // Dashboard elements
         const debtorsTable = document.getElementById('debtorsTable');
@@ -1342,6 +1370,7 @@
         const lowStockTable = document.getElementById('lowStockTable');
         const totalSales = document.getElementById('totalSales');
         const totalPurchases = document.getElementById('totalPurchases');
+        const totalProfit = document.getElementById('totalProfit');
         const totalDebt = document.getElementById('totalDebt');
         const totalProducts = document.getElementById('totalProducts');
         
@@ -1353,6 +1382,8 @@
         const productPurchasePrice = document.getElementById('productPurchasePrice');
         const productSalePrice = document.getElementById('productSalePrice');
         const productCartonSize = document.getElementById('productCartonSize');
+        const productImage = document.getElementById('productImage');
+        const imagePreview = document.getElementById('imagePreview');
         const addProductBtn = document.getElementById('addProductBtn');
         const inventorySearch = document.getElementById('inventorySearch');
         const inventoryTable = document.getElementById('inventoryTable');
@@ -1402,7 +1433,7 @@
         const confirmPaymentBtn = document.getElementById('confirmPaymentBtn');
         const cancelPaymentBtn = document.getElementById('cancelPaymentBtn');
 
-        // دوو کلیکی نوێ
+        // New buttons
         const showPaymentModalBtn = document.getElementById('showPaymentModalBtn');
         const showPaymentHistoryBtn = document.getElementById('showPaymentHistoryBtn');
         const paymentHistoryModal = document.getElementById('paymentHistoryModal');
@@ -1471,8 +1502,13 @@
                 });
             });
             
-            // Product search
+            // Product search with barcode scanner
             productSearch.addEventListener('input', handleProductSearch);
+            productSearch.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    addToCartFromBarcode();
+                }
+            });
             
             // Customer search
             customerSearch.addEventListener('input', handleCustomerSearch);
@@ -1500,6 +1536,21 @@
             
             // Add product
             addProductBtn.addEventListener('click', addProduct);
+            
+            // Image preview
+            productImage.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        imagePreview.innerHTML = `
+                            <img src="${e.target.result}" 
+                                 style="max-width: 100px; max-height: 100px; border-radius: 4px;">
+                        `;
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
             
             // Add purchase
             addPurchaseBtn.addEventListener('click', addPurchase);
@@ -1670,6 +1721,41 @@
             displayProductSuggestions(filteredProducts, productSuggestions);
         }
 
+        // Add to cart from barcode
+        function addToCartFromBarcode() {
+            const barcode = productSearch.value.trim();
+            if (!barcode) return;
+            
+            const product = sampleData.products.find(p => p.barcode === barcode);
+            
+            if (product) {
+                const existingItem = cart.find(item => item.productId === product.id && item.unitType === 'unit');
+                
+                if (existingItem) {
+                    existingItem.quantity += 1;
+                    existingItem.total = existingItem.quantity * existingItem.price;
+                } else {
+                    cart.push({
+                        productId: product.id,
+                        name: product.name,
+                        quantity: 1,
+                        unit: product.unit,
+                        unitType: 'unit',
+                        price: product.salePrice,
+                        total: product.salePrice,
+                        image: product.image,
+                        effectiveQuantity: 1
+                    });
+                }
+                
+                updateCart();
+                productSearch.value = '';
+                showAlert(`${product.name} زیاد کرا بۆ سەبەتە`, 'success');
+            } else {
+                showAlert('کاڵای بەم بارکۆدە نەدۆزرایەوە', 'danger');
+            }
+        }
+
         // Handle purchase product search
         function handlePurchaseProductSearch() {
             const query = purchaseProductSearch.value.toLowerCase();
@@ -1701,14 +1787,44 @@
                 div.style.padding = '10px';
                 div.style.borderBottom = '1px solid #eee';
                 div.style.cursor = 'pointer';
+                div.style.display = 'flex';
+                div.style.alignItems = 'center';
+                div.style.gap = '10px';
+                
+                // Show image if exists
+                const imageHtml = product.image ? 
+                    `<img src="${product.image}" style="width: 40px; height: 40px; object-fit: cover; border-radius: 4px;">` :
+                    `<div style="width: 40px; height: 40px; background: #f1f1f1; border-radius: 4px; display: flex; align-items: center; justify-content: center;">
+                        <i class="fas fa-box" style="color: #777;"></i>
+                    </div>`;
+                
+                // Show carton info if available
+                const cartonInfo = product.cartonSize > 0 ? 
+                    ` - کارتۆن: ${product.cartonSize} دانە (${product.salePrice * product.cartonSize} دینار)` : 
+                    '';
+                
                 div.innerHTML = `
-                    <div><strong>${product.name}</strong></div>
-                    <div>نرخ: ${product.salePrice} دینار - بڕ: ${product.quantity} ${product.unit}</div>
+                    ${imageHtml}
+                    <div>
+                        <div><strong>${product.name}</strong></div>
+                        <div>نرخ: ${product.salePrice} دینار - بڕ: ${product.quantity} ${product.unit}${cartonInfo}</div>
+                    </div>
                 `;
                 
                 div.addEventListener('click', () => {
                     if (container === productSuggestions) {
                         productSearch.value = product.name;
+                        
+                        // Auto-fill price
+                        if (product.cartonSize > 0) {
+                            customPrice.value = product.cartonSize * product.salePrice;
+                            saleUnit.value = 'carton';
+                            saleQuantity.value = 1;
+                        } else {
+                            customPrice.value = product.salePrice;
+                            saleUnit.value = 'unit';
+                            saleQuantity.value = 1;
+                        }
                     } else {
                         purchaseProductSearch.value = product.name;
                         purchasePrice.value = product.purchasePrice;
@@ -1772,9 +1888,17 @@
         // Add to cart
         function addToCart() {
             const productNameValue = productSearch.value;
+            const unitType = saleUnit.value;
+            const quantity = parseInt(saleQuantity.value) || 1;
+            const price = parseFloat(customPrice.value);
             
             if (!productNameValue) {
                 showAlert('تکایە ناوی کاڵا بنووسە!', 'danger');
+                return;
+            }
+            
+            if (!price || price <= 0) {
+                showAlert('تکایە نرخێکی دروست بنووسە!', 'danger');
                 return;
             }
             
@@ -1785,25 +1909,61 @@
                 return;
             }
             
-            // Check if product already in cart
-            const existingItem = cart.find(item => item.productId === product.id);
+            // Calculate effective quantity based on unit type
+            let effectiveQuantity = quantity;
+            let unitName = product.unit;
+            let itemPrice = price;
+            
+            if (unitType === 'carton') {
+                if (product.cartonSize <= 0) {
+                    showAlert('ئەم کاڵایە کارتۆنی نیە!', 'danger');
+                    return;
+                }
+                effectiveQuantity = quantity * product.cartonSize;
+                unitName = 'کارتۆن';
+                itemPrice = price / quantity; // Price per carton
+            } else {
+                unitName = product.unit;
+                itemPrice = price;
+            }
+            
+            // Check stock
+            if (product.quantity < effectiveQuantity) {
+                showAlert(`بڕی ${product.name} تەنها ${product.quantity} ${product.unit} ماوە!`, 'danger');
+                return;
+            }
+            
+            // Calculate total
+            const total = unitType === 'carton' ? price : price * quantity;
+            
+            // Check if product already in cart (same unit type)
+            const existingItem = cart.find(item => 
+                item.productId === product.id && item.unitType === unitType
+            );
             
             if (existingItem) {
-                existingItem.quantity += 1;
-                existingItem.total = existingItem.quantity * existingItem.price;
+                existingItem.quantity += quantity;
+                existingItem.total = existingItem.quantity * (unitType === 'carton' ? itemPrice : itemPrice);
+                existingItem.effectiveQuantity += effectiveQuantity;
             } else {
                 cart.push({
                     productId: product.id,
                     name: product.name,
-                    quantity: 1,
-                    unit: product.unit,
-                    price: product.salePrice,
-                    total: product.salePrice
+                    quantity: quantity,
+                    unit: unitName,
+                    unitType: unitType,
+                    price: itemPrice,
+                    total: total,
+                    image: product.image,
+                    effectiveQuantity: effectiveQuantity
                 });
             }
             
             updateCart();
             productSearch.value = '';
+            saleQuantity.value = 1;
+            customPrice.value = '';
+            saleUnit.value = 'unit';
             productSuggestions.style.display = 'none';
         }
 
@@ -1823,23 +1983,33 @@
                 const cartItem = document.createElement('div');
                 cartItem.className = 'cart-item';
                 
+                const displayName = item.unitType === 'carton' ? 
+                    `${item.name} (کارتۆن)` : item.name;
+                
                 cartItem.innerHTML = `
                     <div class="cart-item-info">
                         <div class="cart-item-image">
-                            <i class="fas fa-box"></i>
+                            ${item.image ? 
+                                `<img src="${item.image}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px;">` :
+                                `<i class="fas fa-box"></i>`
+                            }
                         </div>
                         <div>
-                            <div><strong>${item.name}</strong></div>
-                            <div>${item.price} دینار</div>
+                            <div><strong>${displayName}</strong></div>
+                            <div>${item.price} دینار ${item.unitType === 'carton' ? 'بۆ کارتۆن' : `بۆ ${item.unit}`}</div>
                         </div>
                     </div>
                     <div>
-                        <input type="number" value="${item.quantity}" min="1" style="width: 60px; padding: 5px;" data-id="${item.productId}">
+                        <input type="number" value="${item.quantity}" min="1" style="width: 80px; padding: 5px;" data-id="${item.productId}" data-unit="${item.unitType}">
                         ${item.unit}
                     </div>
-                    <div>${item.total} دینار</div>
                     <div>
-                        <button class="btn btn-danger remove-from-cart" data-id="${item.productId}">
+                        <input type="number" value="${item.price}" min="0" step="0.01" style="width: 100px; padding: 5px;" data-id="${item.productId}" data-unit="${item.unitType}" placeholder="نرخ">
+                        دینار
+                    </div>
+                    <div>${item.total.toLocaleString()} دینار</div>
+                    <div>
+                        <button class="btn btn-danger remove-from-cart" data-id="${item.productId}" data-unit="${item.unitType}">
                             <i class="fas fa-trash"></i>
                         </button>
                     </div>
@@ -1849,12 +2019,34 @@
                 total += item.total;
                 
                 // Add event listener for quantity change
-                const quantityInput = cartItem.querySelector('input');
+                const quantityInput = cartItem.querySelector('input[type="number"]:first-child');
                 quantityInput.addEventListener('change', (e) => {
                     const newQuantity = parseInt(e.target.value);
                     if (newQuantity > 0) {
+                        const product = sampleData.products.find(p => p.id === item.productId);
+                        const unitType = item.unitType;
+                        const effectiveQuantity = unitType === 'carton' ? newQuantity * (product.cartonSize || 1) : newQuantity;
+                        
+                        if (product.quantity < effectiveQuantity - item.effectiveQuantity) {
+                            showAlert(`بڕی ${product.name} تەنها ${product.quantity} ${product.unit} ماوە!`, 'danger');
+                            e.target.value = item.quantity;
+                            return;
+                        }
+                        
                         item.quantity = newQuantity;
+                        item.effectiveQuantity = effectiveQuantity;
                         item.total = item.price * newQuantity;
+                        updateCart();
+                    }
+                });
+                
+                // Add event listener for price change
+                const priceInput = cartItem.querySelector('input[type="number"]:last-child');
+                priceInput.addEventListener('change', (e) => {
+                    const newPrice = parseFloat(e.target.value);
+                    if (newPrice > 0) {
+                        item.price = newPrice;
+                        item.total = newPrice * item.quantity;
                         updateCart();
                     }
                 });
@@ -1862,12 +2054,14 @@
                 // Add event listener for remove button
                 const removeBtn = cartItem.querySelector('.remove-from-cart');
                 removeBtn.addEventListener('click', () => {
-                    cart = cart.filter(i => i.productId !== item.productId);
+                    cart = cart.filter(i => 
+                        i.productId !== item.productId || i.unitType !== item.unitType
+                    );
                     updateCart();
                 });
             });
             
-            cartTotal.textContent = total;
+            cartTotal.textContent = total.toLocaleString();
         }
 
         // Clear cart
@@ -1917,10 +2111,10 @@
             // Calculate total
             const total = cart.reduce((sum, item) => sum + item.total, 0);
             
-            // Check product quantities
+            // Check product quantities using effectiveQuantity
             for (const item of cart) {
                 const product = sampleData.products.find(p => p.id === item.productId);
-                if (product.quantity < item.quantity) {
+                if (product.quantity < item.effectiveQuantity) {
                     showAlert(`بڕی ${product.name} تەنها ${product.quantity} ${product.unit} ماوە!`, 'danger');
                     return;
                 }
@@ -1933,7 +2127,15 @@
                 date: new Date().toISOString().split('T')[0],
                 total: total,
                 paymentMethod: paymentMethodValue,
-                items: [...cart]
+                items: [...cart.map(item => ({
+                    productId: item.productId,
+                    name: item.name,
+                    quantity: item.quantity,
+                    unit: item.unit,
+                    price: item.price,
+                    total: item.total,
+                    unitType: item.unitType
+                }))]
             };
             
             sampleData.sales.push(sale);
@@ -1943,11 +2145,11 @@
                 customer.debt += total;
             }
             
-            // Update product quantities
+            // Update product quantities using effectiveQuantity
             cart.forEach(item => {
                 const product = sampleData.products.find(p => p.id === item.productId);
                 if (product) {
-                    product.quantity -= item.quantity;
+                    product.quantity -= item.effectiveQuantity;
                 }
             });
             
@@ -1959,6 +2161,9 @@
             productSearch.value = '';
             customerSearch.value = '';
             paymentMethod.value = 'cash';
+            saleQuantity.value = 1;
+            customPrice.value = '';
+            saleUnit.value = 'unit';
             updateCart();
             
             // Update displays
@@ -1992,7 +2197,25 @@
                 return;
             }
             
-            // Create new product
+            // Handle image upload
+            const imageFile = productImage.files[0];
+            
+            if (imageFile) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const imageBase64 = e.target.result;
+                    createProductWithImage(name, barcode, unit, quantity, purchasePrice, 
+                                         salePrice, cartonSize, imageBase64);
+                };
+                reader.readAsDataURL(imageFile);
+            } else {
+                createProductWithImage(name, barcode, unit, quantity, purchasePrice, 
+                                     salePrice, cartonSize, '');
+            }
+        }
+
+        function createProductWithImage(name, barcode, unit, quantity, purchasePrice, 
+                                      salePrice, cartonSize, image) {
             const product = {
                 id: sampleData.products.length + 1,
                 name,
@@ -2002,7 +2225,7 @@
                 purchasePrice,
                 salePrice,
                 cartonSize,
-                image: ''
+                image: image
             };
             
             sampleData.products.push(product);
@@ -2018,6 +2241,8 @@
             productPurchasePrice.value = '';
             productSalePrice.value = '';
             productCartonSize.value = '';
+            productImage.value = '';
+            imagePreview.innerHTML = '';
             
             // Update displays
             updateInventoryTable();
@@ -2089,7 +2314,7 @@
             showAlert('کڕین بە سەرکەوتویی تۆمار کرا!', 'success');
         }
 
-        // Add customer - گۆڕانکاری لێرە
+        // Add customer
         function addCustomer() {
             const name = customerName.value;
             const phone = customerPhone.value;
@@ -2225,14 +2450,38 @@
             reader.onload = function(e) {
                 try {
                     const restoredData = JSON.parse(e.target.result);
-                    Object.assign(sampleData, restoredData);
-                    saveDataToStorage();
+                    
+                    // Verify it has the expected structure
+                    if (!restoredData.products || !restoredData.customers || !restoredData.sales) {
+                        showAlert('فایلەکە قەبارەی دروستی نیە!', 'danger');
+                        return;
+                    }
+                    
+                    // Clear current data
+                    sampleData.products = restoredData.products;
+                    sampleData.customers = restoredData.customers;
+                    sampleData.sales = restoredData.sales;
+                    sampleData.purchases = restoredData.purchases || [];
+                    sampleData.payments = restoredData.payments || [];
+                    sampleData.users = restoredData.users || sampleData.users;
+                    sampleData.system = restoredData.system || sampleData.system;
+                    
+                    // Save to localStorage
+                    localStorage.setItem('marketSystemData', JSON.stringify(sampleData));
+                    
+                    // Update all displays
                     updateAllDisplays();
                     showAlert('باکەپ بە سەرکەوتویی گەڕێندرایەوە!', 'success');
                 } catch (error) {
-                    showAlert('فایلەکە دروست نیە!', 'danger');
+                    console.error('Error restoring backup:', error);
+                    showAlert('فایلەکە دروست نیە یان کێشەی هەیە!', 'danger');
                 }
             };
+            
+            reader.onerror = function() {
+                showAlert('هەڵە لە خوێندنەوەی فایلەکە!', 'danger');
+            };
+            
             reader.readAsText(file);
         }
 
@@ -2289,9 +2538,7 @@
                             <input type="text" id="paymentCustomerSearch" class="search-input" placeholder="ناوی کەس...">
                             <span class="search-icon"><i class="fas fa-search"></i></span>
                         </div>
-                        <div id="paymentCustomerSuggestions" style="max-height: 200px; overflow-y: auto; border: 1px solid #ddd; border-radius: 4px; display: none;">
-                            <!-- Customer suggestions will appear here -->
-                        </div>
+                        <div id="paymentCustomerSuggestions" style="max-height: 200px; overflow-y: auto; border: 1px solid #ddd; border-radius: 4px; display: none;"></div>
                     </div>
                     <div class="form-group">
                         <label for="paymentAmount">بڕی پارە</label>
@@ -2446,9 +2693,7 @@
                                 <th>کردارەکان</th>
                             </tr>
                         </thead>
-                        <tbody id="paymentHistoryTable">
-                            <!-- Payment history will be populated by JavaScript -->
-                        </tbody>
+                        <tbody id="paymentHistoryTable"></tbody>
                     </table>
                 </div>
             `;
@@ -2676,10 +2921,37 @@
             const totalDebtAmount = sampleData.customers.reduce((sum, customer) => sum + customer.debt, 0);
             const totalProductsCount = sampleData.products.length;
             
+            // Calculate profit
+            let totalProfitAmount = 0;
+            
+            // Calculate profit from sales
+            sampleData.sales.forEach(sale => {
+                sale.items.forEach(item => {
+                    const product = sampleData.products.find(p => p.id === item.productId);
+                    if (product) {
+                        // Calculate cost price
+                        const costPrice = product.purchasePrice || 0;
+                        
+                        // Calculate effective quantity for carton sales
+                        let effectiveQuantity = item.quantity;
+                        if (item.unitType === 'carton') {
+                            const cartonSize = product.cartonSize || 1;
+                            effectiveQuantity = item.quantity * cartonSize;
+                        }
+                        
+                        // Calculate profit for this item
+                        const salePricePerUnit = item.total / item.quantity;
+                        const profitPerUnit = salePricePerUnit - costPrice;
+                        totalProfitAmount += profitPerUnit * effectiveQuantity;
+                    }
+                });
+            });
+            
             // Update display
             totalSales.textContent = `${totalSalesAmount.toLocaleString()} دینار`;
             totalPurchases.textContent = `${totalPurchasesAmount.toLocaleString()} دینار`;
             totalDebt.textContent = `${totalDebtAmount.toLocaleString()} دینار`;
+            totalProfit.textContent = `${totalProfitAmount.toLocaleString()} دینار`;
             totalProducts.textContent = totalProductsCount;
             
             // Update tab content
@@ -2840,8 +3112,11 @@
                 // Add event listener for purchase button
                 const purchaseBtn = row.querySelector('.purchase-product');
                 purchaseBtn.addEventListener('click', () => {
-                    // In a real application, this would open a purchase form
-                    showAlert(`کڕینی ${product.name}`, 'info');
+                    // Navigate to purchases section and auto-fill
+                    showSection('purchases');
+                    purchaseProductSearch.value = product.name;
+                    purchasePrice.value = product.purchasePrice;
+                    showAlert(`کڕینی ${product.name} ئامادە کراوە`, 'info');
                 });
             });
         }
@@ -2945,7 +3220,17 @@
             filteredProducts.forEach(product => {
                 const row = document.createElement('tr');
                 row.innerHTML = `
-                    <td>${product.name}</td>
+                    <td>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            ${product.image ? 
+                                `<img src="${product.image}" style="width: 40px; height: 40px; object-fit: cover; border-radius: 4px;">` :
+                                `<div style="width: 40px; height: 40px; background: #f1f1f1; border-radius: 4px; display: flex; align-items: center; justify-content: center;">
+                                    <i class="fas fa-box" style="color: #777;"></i>
+                                </div>`
+                            }
+                            <span>${product.name}</span>
+                        </div>
+                    </td>
                     <td>${product.barcode}</td>
                     <td>
                         <span class="badge ${product.quantity < 10 ? 'badge-danger' : 'badge-success'}">
@@ -2970,8 +3255,7 @@
                 // Add event listeners for edit and delete buttons
                 const editBtn = row.querySelector('.edit-product');
                 editBtn.addEventListener('click', () => {
-                    // In a real application, this would open an edit form
-                    showAlert(`دەستکاری ${product.name}`, 'info');
+                    editProduct(product.id);
                 });
                 
                 const deleteBtn = row.querySelector('.delete-product');
@@ -2985,6 +3269,28 @@
                     }
                 });
             });
+        }
+
+        // Edit product
+        function editProduct(productId) {
+            const product = sampleData.products.find(p => p.id === productId);
+            if (!product) return;
+            
+            // In a real application, this would open an edit form
+            // For now, we'll use prompts
+            const newSalePrice = prompt(`نرخی فرۆشتی نوێ بۆ ${product.name}:`, product.salePrice);
+            if (newSalePrice && !isNaN(newSalePrice)) {
+                product.salePrice = parseFloat(newSalePrice);
+                
+                const newQuantity = prompt(`بڕی نوێ بۆ ${product.name}:`, product.quantity);
+                if (newQuantity && !isNaN(newQuantity)) {
+                    product.quantity = parseInt(newQuantity);
+                }
+                
+                saveDataToStorage();
+                updateInventoryTable();
+                showAlert(`${product.name} بە سەرکەوتویی نوێکرایەوە!`, 'success');
+            }
         }
 
         // Update purchases table
@@ -3123,8 +3429,7 @@
                 // Add event listeners for edit and delete buttons
                 const editBtn = row.querySelector('.edit-user');
                 editBtn.addEventListener('click', () => {
-                    // In a real application, this would open an edit form
-                    showAlert(`دەستکاری ${user.username}`, 'info');
+                    editUser(user.username);
                 });
                 
                 const deleteBtn = row.querySelector('.delete-user');
@@ -3137,6 +3442,20 @@
                     }
                 });
             });
+        }
+
+        // Edit user
+        function editUser(username) {
+            const user = sampleData.users.find(u => u.username === username);
+            if (!user) return;
+            
+            const newRole = prompt(`رۆڵی نوێ بۆ ${username} (admin/user):`, user.role);
+            if (newRole && (newRole === 'admin' || newRole === 'user')) {
+                user.role = newRole;
+                saveDataToStorage();
+                updateUsersTable();
+                showAlert('بەکارهێنەر بە سەرکەوتویی نوێکرایەوە!', 'success');
+            }
         }
 
         // View invoice
@@ -3176,7 +3495,7 @@
                         <tbody>
                             ${sale.items.map(item => `
                                 <tr>
-                                    <td>${item.name}</td>
+                                    <td>${item.name}${item.unitType === 'carton' ? ' (کارتۆن)' : ''}</td>
                                     <td>${item.quantity} ${item.unit}</td>
                                     <td>${item.price.toLocaleString()} دینار</td>
                                     <td>${item.total.toLocaleString()} دینار</td>
@@ -3197,8 +3516,7 @@
 
         // Edit invoice
         function editInvoice(invoiceId) {
-            // In a real application, this would open an edit form
-            showAlert('دەستکاری فاکتوور', 'info');
+            showAlert('ئەم تایبەتمەندیە لە وەشاندنی داهاوتر دا کاردەکات', 'info');
         }
 
         // Delete invoice
@@ -3217,7 +3535,6 @@
 
         // Print invoice
         function printInvoice() {
-            // In a real application, this would open a print dialog with the invoice formatted for printing
             window.print();
         }
 
