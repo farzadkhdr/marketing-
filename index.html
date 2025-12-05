@@ -671,11 +671,11 @@
             <h2><i class="fas fa-store"></i> چوونەژوورەوە بۆ سیستەمی مارکێت</h2>
             <div class="form-group">
                 <label for="username"><i class="fas fa-user"></i> ناوی بەکارهێنەر</label>
-                <input type="text" id="username" placeholder="ناوی بەکارهێنەر" value="farzad">
+                <input type="text" id="username" placeholder="ناوی بەکارهێنەر">
             </div>
             <div class="form-group">
                 <label for="password"><i class="fas fa-lock"></i> پاسوۆرد</label>
-                <input type="password" id="password" placeholder="پاسوۆرد" value="farzad1234">
+                <input type="password" id="password" placeholder="پاسوۆرد">
             </div>
             <button id="loginBtn" class="btn btn-success" style="width: 100%;">
                 <i class="fas fa-sign-in-alt"></i> چوونەژوورەوە
@@ -815,6 +815,21 @@
                                     <span class="search-icon"><i class="fas fa-search"></i></span>
                                 </div>
                                 <div id="productSuggestions" style="max-height: 200px; overflow-y: auto; border: 1px solid #ddd; border-radius: 4px; display: none;"></div>
+                            </div>
+                            <div class="form-col">
+                                <label for="saleUnit">یەکە</label>
+                                <select id="saleUnit" class="form-control">
+                                    <option value="unit">دانە</option>
+                                    <option value="carton">کارتۆن</option>
+                                </select>
+                            </div>
+                            <div class="form-col">
+                                <label for="saleQuantity">بڕ</label>
+                                <input type="number" id="saleQuantity" class="form-control" placeholder="بڕ" min="1" value="1">
+                            </div>
+                            <div class="form-col">
+                                <label for="customPrice">نرخ (دینار)</label>
+                                <input type="number" id="customPrice" class="form-control" placeholder="نرخ" min="0" step="0.01">
                             </div>
                             <div class="form-col" style="display: flex; align-items: flex-end;">
                                 <button id="addToCartBtn" class="btn" style="width: 100%;">
@@ -1345,6 +1360,9 @@
         const finalizeSaleBtn = document.getElementById('finalizeSaleBtn');
         const salesHistorySearch = document.getElementById('salesHistorySearch');
         const salesHistoryTable = document.getElementById('salesHistoryTable');
+        const saleUnit = document.getElementById('saleUnit');
+        const saleQuantity = document.getElementById('saleQuantity');
+        const customPrice = document.getElementById('customPrice');
         
         // Dashboard elements
         const debtorsTable = document.getElementById('debtorsTable');
@@ -1432,26 +1450,11 @@
             // Load data from localStorage if available
             loadDataFromStorage();
             
-            // Auto-login for testing
-            autoLogin();
-            
             // Set up event listeners
             setupEventListeners();
             
             // Update all displays
             updateAllDisplays();
-        }
-
-        // Auto-login for testing
-        function autoLogin() {
-            currentUser = sampleData.users[0]; // farzad
-            currentUserSpan.textContent = currentUser.username;
-            loginScreen.style.display = 'none';
-            app.style.display = 'block';
-            loginMessage.style.display = 'none';
-            
-            // Show welcome message
-            showAlert(`بەخێربێی ${currentUser.username}!`, 'success');
         }
 
         // Load data from localStorage
@@ -1632,8 +1635,8 @@
         // Handle logout
         function handleLogout() {
             currentUser = null;
-            usernameInput.value = 'farzad';
-            passwordInput.value = 'farzad1234';
+            usernameInput.value = '';
+            passwordInput.value = '';
             loginScreen.style.display = 'flex';
             app.style.display = 'none';
             cart = [];
@@ -1726,26 +1729,24 @@
             const product = sampleData.products.find(p => p.barcode === barcode);
             
             if (product) {
-                // Check if product already in cart
-                const existingItem = cart.find(item => item.productId === product.id);
+                const existingItem = cart.find(item => item.productId === product.id && item.unitType === 'unit');
                 
                 if (existingItem) {
-                    // پێشنیار ناکرێ بۆ زیادکردنی خۆی
-                    showAlert(`${product.name} پێشتر لە سەبەتەدایە!`, 'info');
-                    return;
+                    existingItem.quantity += 1;
+                    existingItem.total = existingItem.quantity * existingItem.price;
+                } else {
+                    cart.push({
+                        productId: product.id,
+                        name: product.name,
+                        quantity: 1,
+                        unit: product.unit,
+                        unitType: 'unit',
+                        price: product.salePrice,
+                        total: product.salePrice,
+                        image: product.image,
+                        effectiveQuantity: 1
+                    });
                 }
-                
-                cart.push({
-                    productId: product.id,
-                    name: product.name,
-                    quantity: 1, // بەتەنها ١ دانە
-                    unit: product.unit,
-                    unitType: 'unit', // بەتەنها یەکە
-                    price: product.salePrice,
-                    total: product.salePrice,
-                    image: product.image,
-                    effectiveQuantity: 1
-                });
                 
                 updateCart();
                 productSearch.value = '';
@@ -1799,20 +1800,31 @@
                 
                 // Show carton info if available
                 const cartonInfo = product.cartonSize > 0 ? 
-                    ` - کارتۆن: ${product.cartonSize} دانە` : 
+                    ` - کارتۆن: ${product.cartonSize} دانە (${product.salePrice * product.cartonSize} دینار)` : 
                     '';
                 
                 div.innerHTML = `
                     ${imageHtml}
                     <div>
                         <div><strong>${product.name}</strong></div>
-                        <div>بڕ: ${product.quantity} ${product.unit} - نرخ: ${product.salePrice} دینار${cartonInfo}</div>
+                        <div>نرخ: ${product.salePrice} دینار - بڕ: ${product.quantity} ${product.unit}${cartonInfo}</div>
                     </div>
                 `;
                 
                 div.addEventListener('click', () => {
                     if (container === productSuggestions) {
                         productSearch.value = product.name;
+                        
+                        // Auto-fill price
+                        if (product.cartonSize > 0) {
+                            customPrice.value = product.cartonSize * product.salePrice;
+                            saleUnit.value = 'carton';
+                            saleQuantity.value = 1;
+                        } else {
+                            customPrice.value = product.salePrice;
+                            saleUnit.value = 'unit';
+                            saleQuantity.value = 1;
+                        }
                     } else {
                         purchaseProductSearch.value = product.name;
                         purchasePrice.value = product.purchasePrice;
@@ -1876,9 +1888,17 @@
         // Add to cart
         function addToCart() {
             const productNameValue = productSearch.value;
+            const unitType = saleUnit.value;
+            const quantity = parseInt(saleQuantity.value) || 1;
+            const price = parseFloat(customPrice.value);
             
             if (!productNameValue) {
                 showAlert('تکایە ناوی کاڵا بنووسە!', 'danger');
+                return;
+            }
+            
+            if (!price || price <= 0) {
+                showAlert('تکایە نرخێکی دروست بنووسە!', 'danger');
                 return;
             }
             
@@ -1889,21 +1909,10 @@
                 return;
             }
             
-            // Default values
-            const unitType = 'unit'; // بەتەنها یەکە
-            const quantity = 1; // بەتەنها ١ دانە
-            const price = product.salePrice; // نرخی کڕینی کاڵا
-            
-            if (!price || price <= 0) {
-                showAlert('ئەم کاڵایە نرخی نیە!', 'danger');
-                return;
-            }
-            
             // Calculate effective quantity based on unit type
             let effectiveQuantity = quantity;
             let unitName = product.unit;
             let itemPrice = price;
-            let displayQuantity = quantity;
             
             if (unitType === 'carton') {
                 if (product.cartonSize <= 0) {
@@ -1912,12 +1921,10 @@
                 }
                 effectiveQuantity = quantity * product.cartonSize;
                 unitName = 'کارتۆن';
-                itemPrice = price;
-                displayQuantity = quantity;
+                itemPrice = price / quantity; // Price per carton
             } else {
                 unitName = product.unit;
                 itemPrice = price;
-                displayQuantity = quantity;
             }
             
             // Check stock
@@ -1927,7 +1934,7 @@
             }
             
             // Calculate total
-            const total = unitType === 'carton' ? price * quantity : price * quantity;
+            const total = unitType === 'carton' ? price : price * quantity;
             
             // Check if product already in cart (same unit type)
             const existingItem = cart.find(item => 
@@ -1935,14 +1942,14 @@
             );
             
             if (existingItem) {
-                // پێشنیار ناکرێ بۆ زیادکردنی خۆی
-                showAlert('ئەم کاڵایە پێشتر لە سەبەتەدایە!', 'info');
-                return;
+                existingItem.quantity += quantity;
+                existingItem.total = existingItem.quantity * (unitType === 'carton' ? itemPrice : itemPrice);
+                existingItem.effectiveQuantity += effectiveQuantity;
             } else {
                 cart.push({
                     productId: product.id,
                     name: product.name,
-                    quantity: displayQuantity,
+                    quantity: quantity,
                     unit: unitName,
                     unitType: unitType,
                     price: itemPrice,
@@ -1954,6 +1961,9 @@
             
             updateCart();
             productSearch.value = '';
+            saleQuantity.value = 1;
+            customPrice.value = '';
+            saleUnit.value = 'unit';
             productSuggestions.style.display = 'none';
         }
 
@@ -1969,7 +1979,7 @@
             
             let total = 0;
             
-            cart.forEach((item, index) => {
+            cart.forEach(item => {
                 const cartItem = document.createElement('div');
                 cartItem.className = 'cart-item';
                 
@@ -1986,29 +1996,20 @@
                         </div>
                         <div>
                             <div><strong>${displayName}</strong></div>
-                            <div>یەکە: ${item.unit}</div>
-                        </div>
-                    </div>
-                    <div style="display: flex; align-items: center; gap: 10px;">
-                        <div>
-                            <label style="font-size: 0.8rem; color: #666;">بڕ</label>
-                            <input type="number" value="${item.quantity}" min="1" style="width: 80px; padding: 5px; border: 1px solid #ddd; border-radius: 4px;" data-index="${index}">
-                            <span style="font-size: 0.9rem;">${item.unit}</span>
-                        </div>
-                    </div>
-                    <div style="display: flex; align-items: center; gap: 10px;">
-                        <div>
-                            <label style="font-size: 0.8rem; color: #666;">نرخ</label>
-                            <input type="number" value="${item.price}" min="0" step="0.01" style="width: 100px; padding: 5px; border: 1px solid #ddd; border-radius: 4px;" data-index="${index}" placeholder="نرخ">
-                            <span style="font-size: 0.9rem;">دینار</span>
+                            <div>${item.price} دینار ${item.unitType === 'carton' ? 'بۆ کارتۆن' : `بۆ ${item.unit}`}</div>
                         </div>
                     </div>
                     <div>
-                        <label style="font-size: 0.8rem; color: #666;">کۆی</label>
-                        <div style="font-weight: bold; font-size: 1.1rem;">${item.total.toLocaleString()} دینار</div>
+                        <input type="number" value="${item.quantity}" min="1" style="width: 80px; padding: 5px;" data-id="${item.productId}" data-unit="${item.unitType}">
+                        ${item.unit}
                     </div>
-                    <div style="display: flex; align-items: flex-end;">
-                        <button class="btn btn-danger remove-from-cart" data-index="${index}" style="padding: 5px 10px; font-size: 0.9rem;">
+                    <div>
+                        <input type="number" value="${item.price}" min="0" step="0.01" style="width: 100px; padding: 5px;" data-id="${item.productId}" data-unit="${item.unitType}" placeholder="نرخ">
+                        دینار
+                    </div>
+                    <div>${item.total.toLocaleString()} دینار</div>
+                    <div>
+                        <button class="btn btn-danger remove-from-cart" data-id="${item.productId}" data-unit="${item.unitType}">
                             <i class="fas fa-trash"></i>
                         </button>
                     </div>
@@ -2021,29 +2022,20 @@
                 const quantityInput = cartItem.querySelector('input[type="number"]:first-child');
                 quantityInput.addEventListener('change', (e) => {
                     const newQuantity = parseInt(e.target.value);
-                    const itemIndex = parseInt(e.target.getAttribute('data-index'));
-                    
                     if (newQuantity > 0) {
-                        const cartItem = cart[itemIndex];
-                        const product = sampleData.products.find(p => p.id === cartItem.productId);
+                        const product = sampleData.products.find(p => p.id === item.productId);
+                        const unitType = item.unitType;
+                        const effectiveQuantity = unitType === 'carton' ? newQuantity * (product.cartonSize || 1) : newQuantity;
                         
-                        // Calculate effective quantity
-                        let effectiveQuantity = newQuantity;
-                        if (cartItem.unitType === 'carton') {
-                            const cartonSize = product.cartonSize || 1;
-                            effectiveQuantity = newQuantity * cartonSize;
-                        }
-                        
-                        if (product.quantity < effectiveQuantity - cartItem.effectiveQuantity) {
+                        if (product.quantity < effectiveQuantity - item.effectiveQuantity) {
                             showAlert(`بڕی ${product.name} تەنها ${product.quantity} ${product.unit} ماوە!`, 'danger');
-                            e.target.value = cartItem.quantity;
+                            e.target.value = item.quantity;
                             return;
                         }
                         
-                        // Update cart item
-                        cartItem.quantity = newQuantity;
-                        cartItem.effectiveQuantity = effectiveQuantity;
-                        cartItem.total = cartItem.price * newQuantity;
+                        item.quantity = newQuantity;
+                        item.effectiveQuantity = effectiveQuantity;
+                        item.total = item.price * newQuantity;
                         updateCart();
                     }
                 });
@@ -2052,20 +2044,19 @@
                 const priceInput = cartItem.querySelector('input[type="number"]:last-child');
                 priceInput.addEventListener('change', (e) => {
                     const newPrice = parseFloat(e.target.value);
-                    const itemIndex = parseInt(e.target.getAttribute('data-index'));
-                    
                     if (newPrice > 0) {
-                        cart[itemIndex].price = newPrice;
-                        cart[itemIndex].total = newPrice * cart[itemIndex].quantity;
+                        item.price = newPrice;
+                        item.total = newPrice * item.quantity;
                         updateCart();
                     }
                 });
                 
                 // Add event listener for remove button
                 const removeBtn = cartItem.querySelector('.remove-from-cart');
-                removeBtn.addEventListener('click', (e) => {
-                    const itemIndex = parseInt(e.target.closest('button').getAttribute('data-index'));
-                    cart.splice(itemIndex, 1);
+                removeBtn.addEventListener('click', () => {
+                    cart = cart.filter(i => 
+                        i.productId !== item.productId || i.unitType !== item.unitType
+                    );
                     updateCart();
                 });
             });
@@ -2170,6 +2161,9 @@
             productSearch.value = '';
             customerSearch.value = '';
             paymentMethod.value = 'cash';
+            saleQuantity.value = 1;
+            customPrice.value = '';
+            saleUnit.value = 'unit';
             updateCart();
             
             // Update displays
@@ -2909,6 +2903,448 @@
             window.print();
         }
 
+        // Print invoice - New version
+        function printInvoice() {
+            if (!editingInvoiceId) return;
+            
+            const sale = sampleData.sales.find(s => s.id === editingInvoiceId);
+            if (!sale) return;
+            
+            const customer = sale.customerId ? 
+                sampleData.customers.find(c => c.id === sale.customerId) : 
+                { name: 'نەقدی', receipt: 'N/A', debt: 0 };
+            
+            // Calculate previous debt for credit sales
+            let previousDebt = 0;
+            let newDebt = customer.debt;
+            
+            if (sale.paymentMethod === 'credit') {
+                // For credit sales, the sale amount should be added to debt
+                previousDebt = customer.debt - sale.total;
+                newDebt = customer.debt;
+            }
+            
+            // Create a new window for printing
+            const printWindow = window.open('', '_blank');
+            
+            // Get current date and time
+            const now = new Date();
+            const dateStr = now.toLocaleDateString('ku-arab');
+            const timeStr = now.toLocaleTimeString('ku-arab', { hour: '2-digit', minute: '2-digit' });
+            
+            printWindow.document.write(`
+                <!DOCTYPE html>
+                <html lang="ku" dir="rtl">
+                <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <title>فاکتووری فرۆشتن - ${sampleData.system.name}</title>
+                    <style>
+                        @import url('https://fonts.googleapis.com/css2?family=Noto+Naskh+Arabic:wght@400;500;600;700&display=swap');
+                        
+                        * {
+                            margin: 0;
+                            padding: 0;
+                            box-sizing: border-box;
+                            font-family: 'Noto Naskh Arabic', serif;
+                        }
+                        
+                        body {
+                            padding: 20px;
+                            color: #000;
+                            background: white;
+                            max-width: 210mm; /* A4 width */
+                            margin: 0 auto;
+                        }
+                        
+                        @media print {
+                            body {
+                                padding: 10mm;
+                                margin: 0;
+                            }
+                        }
+                        
+                        .invoice-container {
+                            border: 1px solid #333;
+                            padding: 15px;
+                            margin: 0 auto;
+                            page-break-inside: avoid;
+                        }
+                        
+                        .header {
+                            text-align: center;
+                            margin-bottom: 20px;
+                            padding-bottom: 15px;
+                            border-bottom: 2px solid #333;
+                        }
+                        
+                        .system-name {
+                            font-size: 24px;
+                            font-weight: bold;
+                            color: #2c3e50;
+                            margin-bottom: 5px;
+                        }
+                        
+                        .invoice-title {
+                            font-size: 20px;
+                            font-weight: bold;
+                            color: #2c3e50;
+                            margin-bottom: 10px;
+                        }
+                        
+                        .logo-container {
+                            margin-bottom: 10px;
+                        }
+                        
+                        .logo {
+                            max-width: 100px;
+                            max-height: 100px;
+                            display: block;
+                            margin: 0 auto;
+                        }
+                        
+                        .invoice-info {
+                            display: flex;
+                            justify-content: space-between;
+                            margin-bottom: 20px;
+                            padding: 15px;
+                            background: #f8f9fa;
+                            border-radius: 5px;
+                            flex-wrap: wrap;
+                        }
+                        
+                        .info-section {
+                            flex: 1;
+                            min-width: 200px;
+                            margin-bottom: 10px;
+                        }
+                        
+                        .info-label {
+                            font-weight: bold;
+                            color: #555;
+                            margin-bottom: 5px;
+                            font-size: 14px;
+                        }
+                        
+                        .info-value {
+                            font-size: 16px;
+                            color: #000;
+                        }
+                        
+                        .customer-info {
+                            background: #e8f4fd;
+                            padding: 15px;
+                            border-radius: 5px;
+                            margin-bottom: 20px;
+                        }
+                        
+                        .customer-name {
+                            font-size: 18px;
+                            font-weight: bold;
+                            color: #2c3e50;
+                            margin-bottom: 10px;
+                        }
+                        
+                        .debt-info {
+                            display: flex;
+                            gap: 20px;
+                            flex-wrap: wrap;
+                            margin-top: 10px;
+                        }
+                        
+                        .debt-item {
+                            flex: 1;
+                            min-width: 150px;
+                        }
+                        
+                        .debt-label {
+                            font-weight: bold;
+                            color: #555;
+                            font-size: 14px;
+                        }
+                        
+                        .debt-value {
+                            font-size: 16px;
+                            color: #000;
+                        }
+                        
+                        .items-table {
+                            width: 100%;
+                            border-collapse: collapse;
+                            margin: 20px 0;
+                            font-size: 14px;
+                        }
+                        
+                        .items-table th {
+                            background: #2c3e50;
+                            color: white;
+                            padding: 12px 8px;
+                            text-align: center;
+                            font-weight: bold;
+                            border: 1px solid #ddd;
+                        }
+                        
+                        .items-table td {
+                            padding: 10px 8px;
+                            border: 1px solid #ddd;
+                            text-align: center;
+                        }
+                        
+                        .items-table tr:nth-child(even) {
+                            background: #f9f9f9;
+                        }
+                        
+                        .total-section {
+                            margin-top: 20px;
+                            padding: 15px;
+                            background: #f8f9fa;
+                            border-radius: 5px;
+                        }
+                        
+                        .total-row {
+                            display: flex;
+                            justify-content: space-between;
+                            margin-bottom: 10px;
+                            padding-bottom: 5px;
+                            border-bottom: 1px solid #ddd;
+                        }
+                        
+                        .total-label {
+                            font-weight: bold;
+                            color: #555;
+                        }
+                        
+                        .total-value {
+                            font-weight: bold;
+                            color: #000;
+                        }
+                        
+                        .grand-total {
+                            font-size: 20px;
+                            color: #e74c3c;
+                            margin-top: 10px;
+                            padding-top: 10px;
+                            border-top: 2px solid #333;
+                        }
+                        
+                        .payment-method {
+                            margin-top: 15px;
+                            padding: 10px;
+                            background: #fff3cd;
+                            border-radius: 5px;
+                            text-align: center;
+                            font-weight: bold;
+                        }
+                        
+                        .footer {
+                            margin-top: 30px;
+                            padding-top: 15px;
+                            border-top: 2px solid #333;
+                            text-align: center;
+                            font-size: 12px;
+                            color: #666;
+                        }
+                        
+                        .signature {
+                            margin-top: 50px;
+                            display: flex;
+                            justify-content: space-between;
+                            padding: 0 50px;
+                        }
+                        
+                        .signature-line {
+                            width: 200px;
+                            border-top: 1px solid #333;
+                            text-align: center;
+                            padding-top: 5px;
+                        }
+                        
+                        .thank-you {
+                            text-align: center;
+                            margin-top: 20px;
+                            font-style: italic;
+                            color: #666;
+                        }
+                        
+                        @media print {
+                            .no-print {
+                                display: none !important;
+                            }
+                            
+                            .invoice-container {
+                                border: none;
+                                padding: 0;
+                            }
+                            
+                            body {
+                                -webkit-print-color-adjust: exact;
+                                print-color-adjust: exact;
+                            }
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="invoice-container">
+                        <!-- Header -->
+                        <div class="header">
+                            ${sampleData.system.logo ? 
+                                `<div class="logo-container">
+                                    <img src="${sampleData.system.logo}" class="logo" alt="Logo">
+                                </div>` : ''
+                            }
+                            <div class="system-name">${sampleData.system.name}</div>
+                            <div class="invoice-title">فاکتووری فرۆشتن</div>
+                        </div>
+                        
+                        <!-- Invoice Info -->
+                        <div class="invoice-info">
+                            <div class="info-section">
+                                <div class="info-label">کۆدی فاکتوور:</div>
+                                <div class="info-value">F${String(sale.id).padStart(5, '0')}</div>
+                            </div>
+                            <div class="info-section">
+                                <div class="info-label">بەروار:</div>
+                                <div class="info-value">${dateStr}</div>
+                            </div>
+                            <div class="info-section">
+                                <div class="info-label">کات:</div>
+                                <div class="info-value">${timeStr}</div>
+                            </div>
+                            <div class="info-section">
+                                <div class="info-label">رەسیدی کەس:</div>
+                                <div class="info-value">${customer.receipt}</div>
+                            </div>
+                        </div>
+                        
+                        <!-- Customer Info -->
+                        <div class="customer-info">
+                            <div class="customer-name">کەس: ${customer.name}</div>
+                            
+                            ${sale.paymentMethod === 'credit' ? `
+                                <div class="debt-info">
+                                    <div class="debt-item">
+                                        <div class="debt-label">کۆی قەرزی پێشوو:</div>
+                                        <div class="debt-value">${previousDebt.toLocaleString()} دینار</div>
+                                    </div>
+                                    <div class="debt-item">
+                                        <div class="debt-label">بڕی ئەم فاکتوورە:</div>
+                                        <div class="debt-value">${sale.total.toLocaleString()} دینار</div>
+                                    </div>
+                                    <div class="debt-item">
+                                        <div class="debt-label">کۆی قەرزی ئێستا:</div>
+                                        <div class="debt-value">${newDebt.toLocaleString()} دینار</div>
+                                    </div>
+                                </div>
+                            ` : ''}
+                        </div>
+                        
+                        <!-- Items Table -->
+                        <table class="items-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 5%;">#</th>
+                                    <th style="width: 35%;">ناوی کاڵا</th>
+                                    <th style="width: 10%;">بڕ</th>
+                                    <th style="width: 10%;">یەکە</th>
+                                    <th style="width: 15%;">نرخی یەک دانە</th>
+                                    <th style="width: 15%;">نرخی گشتی</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${sale.items.map((item, index) => `
+                                    <tr>
+                                        <td>${index + 1}</td>
+                                        <td>${item.name}${item.unitType === 'carton' ? ' (کارتۆن)' : ''}</td>
+                                        <td>${item.quantity}</td>
+                                        <td>${item.unit}</td>
+                                        <td>${item.price.toLocaleString()} دینار</td>
+                                        <td>${item.total.toLocaleString()} دینار</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                        
+                        <!-- Totals -->
+                        <div class="total-section">
+                            <div class="total-row">
+                                <div class="total-label">کۆی کاڵاکان:</div>
+                                <div class="total-value">${sale.items.length}</div>
+                            </div>
+                            
+                            <div class="total-row">
+                                <div class="total-label">کۆی گشتی:</div>
+                                <div class="total-value">${sale.total.toLocaleString()} دینار</div>
+                            </div>
+                            
+                            ${sale.paymentMethod === 'credit' ? `
+                                <div class="total-row">
+                                    <div class="total-label">کۆی قەرزی پێشوو:</div>
+                                    <div class="total-value">${previousDebt.toLocaleString()} دینار</div>
+                                </div>
+                                <div class="total-row">
+                                    <div class="total-label">کۆی قەرزی دوای فاکتوور:</div>
+                                    <div class="total-value">${newDebt.toLocaleString()} دینار</div>
+                                </div>
+                            ` : ''}
+                            
+                            <div class="grand-total total-row">
+                                <div class="total-label">بڕی فاکتوور:</div>
+                                <div class="total-value">${sale.total.toLocaleString()} دینار</div>
+                            </div>
+                        </div>
+                        
+                        <!-- Payment Method -->
+                        <div class="payment-method">
+                            شێوازی پارەدان: ${sale.paymentMethod === 'cash' ? 'نەقدی' : 'قەرز'}
+                        </div>
+                        
+                        <!-- Thank You Message -->
+                        <div class="thank-you">
+                            سوپاس بۆ هەڵبژاردنتان! تکایە دووبارە سەردانمان بکەن.
+                        </div>
+                        
+                        <!-- Signature -->
+                        <div class="signature">
+                            <div class="signature-line">
+                                واژۆی فرۆشتن
+                            </div>
+                            <div class="signature-line">
+                                واژۆی وەرگرتن
+                            </div>
+                        </div>
+                        
+                        <!-- Footer -->
+                        <div class="footer">
+                            <div>${sampleData.system.name}</div>
+                            <div>بەروار: ${dateStr} - کات: ${timeStr}</div>
+                            <div>فاکتوور: F${String(sale.id).padStart(5, '0')}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="no-print" style="text-align: center; margin-top: 20px; padding: 20px;">
+                        <button onclick="window.print()" style="padding: 10px 30px; background: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px;">
+                            چاپکردنی فاکتوور
+                        </button>
+                        <button onclick="window.close()" style="padding: 10px 30px; background: #e74c3c; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; margin-right: 10px;">
+                            داخستن
+                        </button>
+                    </div>
+                    
+                    <script>
+                        // Auto-print after loading
+                        window.onload = function() {
+                            setTimeout(function() {
+                                window.print();
+                            }, 500);
+                        };
+                    </script>
+                </body>
+                </html>
+            `);
+            
+            printWindow.document.close();
+        }
+
         // Update all displays
         function updateAllDisplays() {
             updateDashboard();
@@ -3471,464 +3907,53 @@
             
             const customer = sale.customerId ? 
                 sampleData.customers.find(c => c.id === sale.customerId) : 
-                { name: 'نەقدی', receipt: 'N/A', debt: 0 };
+                { name: 'نەقدی', receipt: 'N/A' };
             
             invoiceModalBody.innerHTML = `
                 <div class="invoice">
                     <div class="invoice-header">
-                        <div style="display: flex; align-items: center; justify-content: space-between;">
-                            <div>
-                                ${sampleData.system.logo ? 
-                                    `<img src="${sampleData.system.logo}" style="height: 60px; margin-bottom: 10px;">` : 
-                                    `<div style="width: 60px; height: 60px; background: var(--primary); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 10px;">
-                                        <i class="fas fa-store" style="font-size: 1.8rem;"></i>
-                                    </div>`
-                                }
-                                <h2>${sampleData.system.name}</h2>
-                                <p style="color: #666; margin-top: 5px;">فاکتووری فرۆشتن</p>
-                            </div>
-                            <div style="text-align: left;">
-                                <p><strong>کۆدی فاکتوور:</strong></p>
-                                <p style="font-size: 1.2rem; font-weight: bold; color: var(--primary);">F${String(sale.id).padStart(3, '0')}</p>
-                            </div>
+                        <h2>${sampleData.system.name}</h2>
+                        <p>فاکتووری فرۆشتن</p>
+                    </div>
+                    <div class="invoice-details">
+                        <div>
+                            <p><strong>کۆدی فاکتوور:</strong> F${String(sale.id).padStart(3, '0')}</p>
+                            <p><strong>کەس:</strong> ${customer.name}</p>
+                        </div>
+                        <div>
+                            <p><strong>رەسید:</strong> ${customer.receipt}</p>
+                            <p><strong>بەروار:</strong> ${sale.date}</p>
                         </div>
                     </div>
-                    
-                    <div class="invoice-details" style="background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 15px 0;">
-                        <div style="display: flex; justify-content: space-between; flex-wrap: wrap;">
-                            <div style="flex: 1; min-width: 200px;">
-                                <p><strong>کەس:</strong> ${customer.name}</p>
-                                <p><strong>بەروار:</strong> ${sale.date}</p>
-                                <p><strong>کات:</strong> ${new Date().toLocaleTimeString('ku-IQ', {hour: '2-digit', minute:'2-digit'})}</p>
-                            </div>
-                            <div style="flex: 1; min-width: 200px; text-align: left;">
-                                <p><strong>رەسید:</strong> ${customer.receipt}</p>
-                                <p><strong>شێوازی پارەدان:</strong> ${sale.paymentMethod === 'cash' ? 'نەقدی' : 'قەرز'}</p>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <table class="invoice-items" style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+                    <table class="invoice-items">
                         <thead>
-                            <tr style="background: #f1f1f1;">
-                                <th style="padding: 10px; text-align: right; border: 1px solid #ddd;">کاڵا</th>
-                                <th style="padding: 10px; text-align: center; border: 1px solid #ddd; width: 80px;">یەکە</th>
-                                <th style="padding: 10px; text-align: center; border: 1px solid #ddd; width: 80px;">بڕ</th>
-                                <th style="padding: 10px; text-align: left; border: 1px solid #ddd; width: 100px;">نرخی یەک دانە</th>
-                                <th style="padding: 10px; text-align: left; border: 1px solid #ddd; width: 100px;">نرخی گشتی</th>
+                            <tr>
+                                <th>کاڵا</th>
+                                <th>بڕ</th>
+                                <th>نرخ</th>
+                                <th>کۆی</th>
                             </tr>
                         </thead>
                         <tbody>
-                            ${sale.items.map(item => {
-                                const effectiveQuantity = item.unitType === 'carton' ? 
-                                    `کارتۆن (${item.quantity})` : 
-                                    `${item.quantity} ${item.unit}`;
-                                
-                                return `
-                                    <tr>
-                                        <td style="padding: 10px; border: 1px solid #ddd;">${item.name}${item.unitType === 'carton' ? ' (کارتۆن)' : ''}</td>
-                                        <td style="padding: 10px; text-align: center; border: 1px solid #ddd;">${item.unit}</td>
-                                        <td style="padding: 10px; text-align: center; border: 1px solid #ddd;">${effectiveQuantity}</td>
-                                        <td style="padding: 10px; text-align: left; border: 1px solid #ddd;">${item.price.toLocaleString()} دینار</td>
-                                        <td style="padding: 10px; text-align: left; border: 1px solid #ddd;">${item.total.toLocaleString()} دینار</td>
-                                    </tr>
-                                `;
-                            }).join('')}
+                            ${sale.items.map(item => `
+                                <tr>
+                                    <td>${item.name}${item.unitType === 'carton' ? ' (کارتۆن)' : ''}</td>
+                                    <td>${item.quantity} ${item.unit}</td>
+                                    <td>${item.price.toLocaleString()} دینار</td>
+                                    <td>${item.total.toLocaleString()} دینار</td>
+                                </tr>
+                            `).join('')}
                         </tbody>
                     </table>
-                    
-                    <div style="margin-top: 20px;">
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
-                            <div style="flex: 2; text-align: right;">
-                                <p><strong>کۆی بڕی فاکتوورەکە:</strong></p>
-                            </div>
-                            <div style="flex: 1; text-align: left;">
-                                <p><strong>${sale.total.toLocaleString()} دینار</strong></p>
-                            </div>
-                        </div>
-                        
-                        ${sale.paymentMethod === 'credit' && customer ? `
-                            <div style="background: #f8f9fa; padding: 15px; border-radius: 5px; margin-top: 15px;">
-                                <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
-                                    <div style="flex: 2; text-align: right;">
-                                        <p>کۆی پارەی پێشووی قەرزدار:</p>
-                                    </div>
-                                    <div style="flex: 1; text-align: left;">
-                                        <p>${customer.debt.toLocaleString()} دینار</p>
-                                    </div>
-                                </div>
-                                <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
-                                    <div style="flex: 2; text-align: right;">
-                                        <p>کۆی قەرزی ئێستا:</p>
-                                    </div>
-                                    <div style="flex: 1; text-align: left;">
-                                        <p><strong>${(customer.debt + sale.total).toLocaleString()} دینار</strong></p>
-                                    </div>
-                                </div>
-                            </div>
-                        ` : ''}
-                        
-                        <div style="border-top: 2px solid var(--primary); margin-top: 20px; padding-top: 20px;">
-                            <div style="display: flex; justify-content: space-between;">
-                                <div style="flex: 2; text-align: right;">
-                                    <p style="font-size: 1.1rem;"><strong>کۆی گشتی:</strong></p>
-                                </div>
-                                <div style="flex: 1; text-align: left;">
-                                    <p style="font-size: 1.2rem; font-weight: bold; color: var(--primary);">${sale.total.toLocaleString()} دینار</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div style="margin-top: 30px; text-align: center; color: #666;">
-                        <p>___________________________________</p>
-                        <p>واژۆ</p>
-                        <p style="margin-top: 20px; font-size: 0.9rem;">${new Date().toLocaleDateString('ku-IQ', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                    <div class="invoice-total">
+                        <p>کۆی گشتی: ${sale.total.toLocaleString()} دینار</p>
+                        <p>شێوازی پارەدان: ${sale.paymentMethod === 'cash' ? 'نەقدی' : 'قەرز'}</p>
                     </div>
                 </div>
             `;
             
             invoiceModal.style.display = 'flex';
             editingInvoiceId = invoiceId;
-        }
-
-        // Print invoice
-        function printInvoice() {
-            if (!editingInvoiceId) return;
-            
-            const sale = sampleData.sales.find(s => s.id === editingInvoiceId);
-            if (!sale) return;
-            
-            const customer = sale.customerId ? 
-                sampleData.customers.find(c => c.id === sale.customerId) : 
-                { name: 'نەقدی', receipt: 'N/A', debt: 0 };
-            
-            const printWindow = window.open('', '_blank');
-            printWindow.document.write(`
-                <!DOCTYPE html>
-                <html lang="ku" dir="rtl">
-                <head>
-                    <meta charset="UTF-8">
-                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                    <title>فاکتووری فرۆشتن</title>
-                    <style>
-                        @page {
-                            size: A4;
-                            margin: 10mm;
-                        }
-                        
-                        body {
-                            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-                            line-height: 1.5;
-                            color: #000;
-                            margin: 0;
-                            padding: 0;
-                            background: white;
-                            font-size: 14px;
-                        }
-                        
-                        .invoice-container {
-                            max-width: 210mm;
-                            margin: 0 auto;
-                            padding: 15px;
-                            box-sizing: border-box;
-                        }
-                        
-                        .header {
-                            text-align: center;
-                            margin-bottom: 20px;
-                            border-bottom: 2px solid #3498db;
-                            padding-bottom: 15px;
-                        }
-                        
-                        .logo-section {
-                            display: flex;
-                            align-items: center;
-                            justify-content: space-between;
-                            margin-bottom: 10px;
-                        }
-                        
-                        .system-name {
-                            font-size: 24px;
-                            font-weight: bold;
-                            color: #2c3e50;
-                            margin: 10px 0;
-                        }
-                        
-                        .invoice-title {
-                            color: #666;
-                            font-size: 16px;
-                            margin: 5px 0 15px 0;
-                        }
-                        
-                        .invoice-code {
-                            font-size: 18px;
-                            font-weight: bold;
-                            color: #3498db;
-                            margin: 10px 0;
-                        }
-                        
-                        .details-section {
-                            background: #f8f9fa;
-                            padding: 15px;
-                            border-radius: 5px;
-                            margin: 15px 0;
-                            border: 1px solid #dee2e6;
-                        }
-                        
-                        .details-grid {
-                            display: grid;
-                            grid-template-columns: 1fr 1fr;
-                            gap: 15px;
-                        }
-                        
-                        .details-item {
-                            margin-bottom: 8px;
-                        }
-                        
-                        .details-item strong {
-                            color: #2c3e50;
-                        }
-                        
-                        table {
-                            width: 100%;
-                            border-collapse: collapse;
-                            margin: 20px 0;
-                            border: 1px solid #dee2e6;
-                        }
-                        
-                        th {
-                            background: #f1f1f1;
-                            padding: 12px 8px;
-                            text-align: right;
-                            border: 1px solid #dee2e6;
-                            font-weight: bold;
-                            color: #2c3e50;
-                            font-size: 13px;
-                        }
-                        
-                        td {
-                            padding: 10px 8px;
-                            border: 1px solid #dee2e6;
-                            text-align: right;
-                            font-size: 13px;
-                        }
-                        
-                        td:nth-child(2), td:nth-child(3) {
-                            text-align: center;
-                        }
-                        
-                        td:nth-child(4), td:nth-child(5) {
-                            text-align: left;
-                        }
-                        
-                        .totals-section {
-                            margin-top: 20px;
-                        }
-                        
-                        .total-row {
-                            display: flex;
-                            justify-content: space-between;
-                            margin-bottom: 8px;
-                            padding: 5px 0;
-                        }
-                        
-                        .invoice-total {
-                            border-top: 2px solid #3498db;
-                            margin-top: 20px;
-                            padding-top: 15px;
-                        }
-                        
-                        .final-total {
-                            font-size: 18px;
-                            font-weight: bold;
-                            color: #3498db;
-                        }
-                        
-                        .debt-section {
-                            background: #f8f9fa;
-                            padding: 12px;
-                            border-radius: 5px;
-                            margin: 15px 0;
-                            border: 1px solid #dee2e6;
-                        }
-                        
-                        .signature {
-                            text-align: center;
-                            margin-top: 30px;
-                            padding-top: 20px;
-                            border-top: 1px dashed #ddd;
-                            color: #666;
-                        }
-                        
-                        .footer {
-                            text-align: center;
-                            margin-top: 20px;
-                            font-size: 12px;
-                            color: #666;
-                        }
-                        
-                        @media print {
-                            body {
-                                margin: 0;
-                                padding: 10mm;
-                            }
-                            
-                            .no-print {
-                                display: none !important;
-                            }
-                            
-                            .invoice-container {
-                                padding: 0;
-                            }
-                        }
-                    </style>
-                </head>
-                <body>
-                    <div class="invoice-container">
-                        <div class="header">
-                            <div class="logo-section">
-                                ${sampleData.system.logo ? 
-                                    `<img src="${sampleData.system.logo}" style="height: 50px;">` : 
-                                    `<div style="width: 50px; height: 50px; background: #3498db; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
-                                        <i class="fas fa-store" style="font-size: 1.5rem;"></i>
-                                    </div>`
-                                }
-                                <div style="text-align: left;">
-                                    <div class="invoice-code">F${String(sale.id).padStart(3, '0')}</div>
-                                </div>
-                            </div>
-                            
-                            <div class="system-name">${sampleData.system.name}</div>
-                            <div class="invoice-title">فاکتووری فرۆشتن</div>
-                        </div>
-                        
-                        <div class="details-section">
-                            <div class="details-grid">
-                                <div>
-                                    <div class="details-item"><strong>کەس:</strong> ${customer.name}</div>
-                                    <div class="details-item"><strong>رەسید:</strong> ${customer.receipt}</div>
-                                    <div class="details-item"><strong>بەروار:</strong> ${sale.date}</div>
-                                </div>
-                                <div>
-                                    <div class="details-item"><strong>کات:</strong> ${new Date().toLocaleTimeString('ku-IQ', {hour: '2-digit', minute:'2-digit'})}</div>
-                                    <div class="details-item"><strong>شێوازی پارەدان:</strong> ${sale.paymentMethod === 'cash' ? 'نەقدی' : 'قەرز'}</div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>کاڵا</th>
-                                    <th>یەکە</th>
-                                    <th>بڕ</th>
-                                    <th>نرخی یەک دانە</th>
-                                    <th>نرخی گشتی</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${sale.items.map(item => {
-                                    const effectiveQuantity = item.unitType === 'carton' ? 
-                                        `کارتۆن (${item.quantity})` : 
-                                        `${item.quantity} ${item.unit}`;
-                                    
-                                    return `
-                                        <tr>
-                                            <td>${item.name}${item.unitType === 'carton' ? ' (کارتۆن)' : ''}</td>
-                                            <td>${item.unit}</td>
-                                            <td>${effectiveQuantity}</td>
-                                            <td>${item.price.toLocaleString()} دینار</td>
-                                            <td>${item.total.toLocaleString()} دینار</td>
-                                        </tr>
-                                    `;
-                                }).join('')}
-                            </tbody>
-                        </table>
-                        
-                        <div class="totals-section">
-                            <div class="total-row">
-                                <div style="flex: 2; text-align: right;">
-                                    <strong>کۆی بڕی فاکتوورەکە:</strong>
-                                </div>
-                                <div style="flex: 1; text-align: left;">
-                                    <strong>${sale.total.toLocaleString()} دینار</strong>
-                                </div>
-                            </div>
-                            
-                            ${sale.paymentMethod === 'credit' && customer ? `
-                                <div class="debt-section">
-                                    <div class="total-row">
-                                        <div style="flex: 2; text-align: right;">
-                                            کۆی پارەی پێشووی قەرزدار:
-                                        </div>
-                                        <div style="flex: 1; text-align: left;">
-                                            ${customer.debt.toLocaleString()} دینار
-                                        </div>
-                                    </div>
-                                    <div class="total-row">
-                                        <div style="flex: 2; text-align: right;">
-                                            کۆی قەرزی ئێستا:
-                                        </div>
-                                        <div style="flex: 1; text-align: left;">
-                                            <strong>${(customer.debt + sale.total).toLocaleString()} دینار</strong>
-                                        </div>
-                                    </div>
-                                </div>
-                            ` : ''}
-                            
-                            <div class="invoice-total">
-                                <div class="total-row final-total">
-                                    <div style="flex: 2; text-align: right;">
-                                        کۆی گشتی:
-                                    </div>
-                                    <div style="flex: 1; text-align: left;">
-                                        ${sale.total.toLocaleString()} دینار
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="signature">
-                            <div style="margin-bottom: 30px;">___________________________________</div>
-                            <div style="margin-bottom: 10px;"><strong>واژۆ</strong></div>
-                            <div style="color: #666; font-size: 12px;">
-                                ${new Date().toLocaleDateString('ku-IQ', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-                            </div>
-                        </div>
-                        
-                        <div class="footer">
-                            <p>${sampleData.system.name} - هەموو مافەکان پارێزراون</p>
-                        </div>
-                        
-                        <div class="no-print" style="text-align: center; margin-top: 30px;">
-                            <button onclick="window.print()" style="padding: 10px 20px; background: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px;">
-                                چاپکردن
-                            </button>
-                            <button onclick="window.close()" style="padding: 10px 20px; background: #95a5a6; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; margin-right: 10px;">
-                                داخستن
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <script>
-                        // Auto-print when window loads
-                        window.onload = function() {
-                            window.print();
-                        };
-                        
-                        // Close window after printing
-                        window.onafterprint = function() {
-                            setTimeout(function() {
-                                window.close();
-                            }, 1000);
-                        };
-                    </script>
-                </body>
-                </html>
-            `);
-            
-            printWindow.document.close();
         }
 
         // Edit invoice
