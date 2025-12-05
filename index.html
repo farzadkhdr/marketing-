@@ -83,7 +83,7 @@
             text-decoration: none;
             padding: 8px 15px;
             border-radius: 4px;
-                            transition: all 0.3s;
+            transition: all 0.3s;
             display: flex;
             align-items: center;
             gap: 5px;
@@ -294,10 +294,6 @@
 
         .card:nth-child(5) {
             border-left: 4px solid var(--info);
-        }
-
-        .card:nth-child(6) {
-            border-left: 4px solid #9b59b6;
         }
 
         /* Table Styles */
@@ -749,11 +745,6 @@
                             <h3>کۆی کاڵاکان</h3>
                             <div class="value" id="totalProducts">0</div>
                         </div>
-                        <div class="card" style="border-left: 4px solid #9b59b6;">
-                            <i class="fas fa-chart-pie"></i>
-                            <h3>ڕێژەی قازانج</h3>
-                            <div class="value" id="profitRate">0%</div>
-                        </div>
                     </div>
 
                     <div class="tabs">
@@ -837,9 +828,8 @@
                                 <input type="number" id="saleQuantity" class="form-control" placeholder="بڕ" min="1" value="1">
                             </div>
                             <div class="form-col">
-                                <label for="salePrice">نرخ (دینار)</label>
-                                <input type="number" id="salePrice" class="form-control" placeholder="نرخ" min="0" step="0.01">
-                                <small style="color: #777; font-size: 0.8rem;">نرخی کارتۆن: کۆی نرخی دانەکان</small>
+                                <label for="customPrice">نرخ (دینار)</label>
+                                <input type="number" id="customPrice" class="form-control" placeholder="نرخ" min="0" step="0.01">
                             </div>
                             <div class="form-col" style="display: flex; align-items: flex-end;">
                                 <button id="addToCartBtn" class="btn" style="width: 100%;">
@@ -1372,7 +1362,7 @@
         const salesHistoryTable = document.getElementById('salesHistoryTable');
         const saleUnit = document.getElementById('saleUnit');
         const saleQuantity = document.getElementById('saleQuantity');
-        const salePrice = document.getElementById('salePrice');
+        const customPrice = document.getElementById('customPrice');
         
         // Dashboard elements
         const debtorsTable = document.getElementById('debtorsTable');
@@ -1383,7 +1373,6 @@
         const totalProfit = document.getElementById('totalProfit');
         const totalDebt = document.getElementById('totalDebt');
         const totalProducts = document.getElementById('totalProducts');
-        const profitRate = document.getElementById('profitRate');
         
         // Inventory elements
         const productName = document.getElementById('productName');
@@ -1520,9 +1509,6 @@
                     addToCartFromBarcode();
                 }
             });
-            
-            // Update price when unit changes
-            saleUnit.addEventListener('change', updatePriceBasedOnUnit);
             
             // Customer search
             customerSearch.addEventListener('input', handleCustomerSearch);
@@ -1718,31 +1704,6 @@
             }
         }
 
-        // Update price based on unit selection
-        function updatePriceBasedOnUnit() {
-            const productNameValue = productSearch.value;
-            const unitType = saleUnit.value;
-            
-            if (!productNameValue) return;
-            
-            const product = sampleData.products.find(p => p.name === productNameValue);
-            if (!product) return;
-            
-            if (unitType === 'carton') {
-                if (product.cartonSize > 0) {
-                    // Convert to carton price
-                    const currentPrice = parseFloat(salePrice.value) || product.salePrice;
-                    salePrice.value = currentPrice * product.cartonSize;
-                }
-            } else {
-                // Convert to unit price
-                const currentPrice = parseFloat(salePrice.value) || product.salePrice;
-                if (product.cartonSize > 0) {
-                    salePrice.value = currentPrice / product.cartonSize;
-                }
-            }
-        }
-
         // Handle product search
         function handleProductSearch() {
             const query = productSearch.value.toLowerCase();
@@ -1781,12 +1742,9 @@
                         unit: product.unit,
                         unitType: 'unit',
                         price: product.salePrice,
-                        basePrice: product.salePrice,
-                        purchasePrice: product.purchasePrice,
                         total: product.salePrice,
                         image: product.image,
-                        effectiveQuantity: 1,
-                        cartonSize: product.cartonSize
+                        effectiveQuantity: 1
                     });
                 }
                 
@@ -1857,17 +1815,16 @@
                     if (container === productSuggestions) {
                         productSearch.value = product.name;
                         
-                        // Auto-fill price based on selected unit
+                        // Auto-fill price
                         if (product.cartonSize > 0) {
-                            salePrice.value = product.cartonSize * product.salePrice;
+                            customPrice.value = product.cartonSize * product.salePrice;
                             saleUnit.value = 'carton';
                             saleQuantity.value = 1;
                         } else {
-                            salePrice.value = product.salePrice;
+                            customPrice.value = product.salePrice;
                             saleUnit.value = 'unit';
                             saleQuantity.value = 1;
                         }
-                        container.style.display = 'none';
                     } else {
                         purchaseProductSearch.value = product.name;
                         purchasePrice.value = product.purchasePrice;
@@ -1933,10 +1890,15 @@
             const productNameValue = productSearch.value;
             const unitType = saleUnit.value;
             const quantity = parseInt(saleQuantity.value) || 1;
-            const customPrice = parseFloat(salePrice.value) || null;
+            const price = parseFloat(customPrice.value);
             
             if (!productNameValue) {
                 showAlert('تکایە ناوی کاڵا بنووسە!', 'danger');
+                return;
+            }
+            
+            if (!price || price <= 0) {
+                showAlert('تکایە نرخێکی دروست بنووسە!', 'danger');
                 return;
             }
             
@@ -1947,15 +1909,10 @@
                 return;
             }
             
-            // نرخی بنەڕەتی
-            let basePrice = product.salePrice;
-            
-            // ئەگەر نرخی تایبەت دیاری کرا بەکاربێنە
-            let itemPrice = customPrice !== null ? customPrice : basePrice;
-            
             // Calculate effective quantity based on unit type
             let effectiveQuantity = quantity;
             let unitName = product.unit;
+            let itemPrice = price;
             
             if (unitType === 'carton') {
                 if (product.cartonSize <= 0) {
@@ -1964,10 +1921,10 @@
                 }
                 effectiveQuantity = quantity * product.cartonSize;
                 unitName = 'کارتۆن';
-                // ئەگەر نرخی تایبەت نەکرا، نرخی کارتۆن حساب بکە
-                if (customPrice === null) {
-                    itemPrice = basePrice * product.cartonSize;
-                }
+                itemPrice = price / quantity; // Price per carton
+            } else {
+                unitName = product.unit;
+                itemPrice = price;
             }
             
             // Check stock
@@ -1977,7 +1934,7 @@
             }
             
             // Calculate total
-            const total = itemPrice * quantity;
+            const total = unitType === 'carton' ? price : price * quantity;
             
             // Check if product already in cart (same unit type)
             const existingItem = cart.find(item => 
@@ -1986,7 +1943,7 @@
             
             if (existingItem) {
                 existingItem.quantity += quantity;
-                existingItem.total = existingItem.quantity * existingItem.price;
+                existingItem.total = existingItem.quantity * (unitType === 'carton' ? itemPrice : itemPrice);
                 existingItem.effectiveQuantity += effectiveQuantity;
             } else {
                 cart.push({
@@ -1995,20 +1952,17 @@
                     quantity: quantity,
                     unit: unitName,
                     unitType: unitType,
-                    price: itemPrice,  // نرخ (ئەگەر تایبەت بێت یان نە)
-                    basePrice: basePrice, // نرخی بنەڕەتی (بۆ حساب کردنی قازانج)
-                    purchasePrice: product.purchasePrice, // نرخی کڕین
+                    price: itemPrice,
                     total: total,
                     image: product.image,
-                    effectiveQuantity: effectiveQuantity,
-                    cartonSize: product.cartonSize // چەند دانە لە کارتۆن
+                    effectiveQuantity: effectiveQuantity
                 });
             }
             
             updateCart();
             productSearch.value = '';
             saleQuantity.value = 1;
-            salePrice.value = '';
+            customPrice.value = '';
             saleUnit.value = 'unit';
             productSuggestions.style.display = 'none';
         }
@@ -2042,9 +1996,7 @@
                         </div>
                         <div>
                             <div><strong>${displayName}</strong></div>
-                            <div style="font-size: 0.8rem; color: #777;">
-                                قازانج: ${((item.price - (item.purchasePrice || 0)) * item.effectiveQuantity).toLocaleString()} دینار
-                            </div>
+                            <div>${item.price} دینار ${item.unitType === 'carton' ? 'بۆ کارتۆن' : `بۆ ${item.unit}`}</div>
                         </div>
                     </div>
                     <div>
@@ -2052,7 +2004,7 @@
                         ${item.unit}
                     </div>
                     <div>
-                        <input type="number" value="${item.price}" min="0" step="0.01" style="width: 100px; padding: 5px;" data-id="${item.productId}" data-unit="${item.unitType}">
+                        <input type="number" value="${item.price}" min="0" step="0.01" style="width: 100px; padding: 5px;" data-id="${item.productId}" data-unit="${item.unitType}" placeholder="نرخ">
                         دینار
                     </div>
                     <div>${item.total.toLocaleString()} دینار</div>
@@ -2175,23 +2127,16 @@
                 date: new Date().toISOString().split('T')[0],
                 total: total,
                 paymentMethod: paymentMethodValue,
-                profit: 0, // قازانج دەستکاری دەکرێ لە خوارەوە
                 items: [...cart.map(item => ({
                     productId: item.productId,
                     name: item.name,
                     quantity: item.quantity,
                     unit: item.unit,
                     price: item.price,
-                    basePrice: item.basePrice,
-                    purchasePrice: item.purchasePrice,
                     total: item.total,
-                    unitType: item.unitType,
-                    profit: (item.price - (item.purchasePrice || 0)) * item.effectiveQuantity
+                    unitType: item.unitType
                 }))]
             };
-            
-            // حساب کردنی کۆی قازانجی ئەم فرۆشتنە
-            sale.profit = sale.items.reduce((sum, item) => sum + item.profit, 0);
             
             sampleData.sales.push(sale);
             
@@ -2217,7 +2162,7 @@
             customerSearch.value = '';
             paymentMethod.value = 'cash';
             saleQuantity.value = 1;
-            salePrice.value = '';
+            customPrice.value = '';
             saleUnit.value = 'unit';
             updateCart();
             
@@ -2234,7 +2179,7 @@
             const unit = productUnit.value;
             const quantity = parseInt(productQuantity.value) || 0;
             const purchasePrice = parseFloat(productPurchasePrice.value) || 0;
-            const salePriceValue = parseFloat(productSalePrice.value) || 0;
+            const salePrice = parseFloat(productSalePrice.value) || 0;
             const cartonSize = parseInt(productCartonSize.value) || 0;
             
             if (!name) {
@@ -2260,17 +2205,17 @@
                 reader.onload = function(e) {
                     const imageBase64 = e.target.result;
                     createProductWithImage(name, barcode, unit, quantity, purchasePrice, 
-                                         salePriceValue, cartonSize, imageBase64);
+                                         salePrice, cartonSize, imageBase64);
                 };
                 reader.readAsDataURL(imageFile);
             } else {
                 createProductWithImage(name, barcode, unit, quantity, purchasePrice, 
-                                     salePriceValue, cartonSize, '');
+                                     salePrice, cartonSize, '');
             }
         }
 
         function createProductWithImage(name, barcode, unit, quantity, purchasePrice, 
-                                      salePriceValue, cartonSize, image) {
+                                      salePrice, cartonSize, image) {
             const product = {
                 id: sampleData.products.length + 1,
                 name,
@@ -2278,7 +2223,7 @@
                 quantity,
                 unit,
                 purchasePrice,
-                salePrice: salePriceValue,
+                salePrice,
                 cartonSize,
                 image: image
             };
@@ -2978,17 +2923,16 @@
             
             // Calculate profit
             let totalProfitAmount = 0;
-            let totalCostAmount = 0;
             
             // Calculate profit from sales
             sampleData.sales.forEach(sale => {
                 sale.items.forEach(item => {
                     const product = sampleData.products.find(p => p.id === item.productId);
                     if (product) {
-                        // نرخی کڕین
+                        // Calculate cost price
                         const costPrice = product.purchasePrice || 0;
                         
-                        // Calculate effective quantity
+                        // Calculate effective quantity for carton sales
                         let effectiveQuantity = item.quantity;
                         if (item.unitType === 'carton') {
                             const cartonSize = product.cartonSize || 1;
@@ -2999,18 +2943,9 @@
                         const salePricePerUnit = item.total / item.quantity;
                         const profitPerUnit = salePricePerUnit - costPrice;
                         totalProfitAmount += profitPerUnit * effectiveQuantity;
-                        
-                        // Calculate total cost
-                        totalCostAmount += costPrice * effectiveQuantity;
                     }
                 });
             });
-            
-            // حساب کردنی ڕێژەی قازانج
-            let profitRateValue = 0;
-            if (totalCostAmount > 0) {
-                profitRateValue = (totalProfitAmount / totalCostAmount) * 100;
-            }
             
             // Update display
             totalSales.textContent = `${totalSalesAmount.toLocaleString()} دینار`;
@@ -3018,7 +2953,6 @@
             totalDebt.textContent = `${totalDebtAmount.toLocaleString()} دینار`;
             totalProfit.textContent = `${totalProfitAmount.toLocaleString()} دینار`;
             totalProducts.textContent = totalProductsCount;
-            profitRate.textContent = `${profitRateValue.toFixed(2)}%`;
             
             // Update tab content
             if (currentTab === 'debtors') {
@@ -3572,7 +3506,6 @@
                     <div class="invoice-total">
                         <p>کۆی گشتی: ${sale.total.toLocaleString()} دینار</p>
                         <p>شێوازی پارەدان: ${sale.paymentMethod === 'cash' ? 'نەقدی' : 'قەرز'}</p>
-                        <p>قازانج: ${sale.profit.toLocaleString()} دینار</p>
                     </div>
                 </div>
             `;
